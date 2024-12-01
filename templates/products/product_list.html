@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Our Products</h1>
+    </header>
+
+    <section class="product-grid">
+    {% for product in products %}
+    <div class="product-card">
+        <!-- Display product image with fallback -->
+        <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}"
+             alt="{{ product.get('name', 'Unnamed Product') }}">
+
+        <!-- Display product name and price -->
+        <h3>{{ product['name'] or 'Unnamed Product' }}</h3>
+        <p>${{ product['price'] if product.get('price') else 'N/A' }}</p>
+
+        <!-- Dynamic link to product details -->
+        <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">View Details</a>
+    </div>
+    {% else %}
+    <!-- Display message if no products are available -->
+    <p>No products available at the moment.</p>
+    {% endfor %}
+</section>
+
+
+    <footer>
+        <p>&copy; 2024 Online Clothing Store</p>
+    </footer>
+</body>
+</html>

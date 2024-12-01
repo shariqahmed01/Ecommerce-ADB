@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product['name'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}">
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        main {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .product-image {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .product-details {
+            margin-top: 1rem;
+        }
+        .cart-section {
+            margin-top: 2rem;
+            padding: 20px;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            background-color: #e7ffe7;
+        }
+        .cart-section label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .review {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .review p {
+            margin: 5px 0;
+        }
+        .reviews-section h2 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{{ product['name'] }}</h1>
+    </header>
+
+    <main>
+        <!-- Product Image -->
+        <img class="product-image" src="{{ product['imageUrls'][0] if product.get('imageUrls') else url_for('static', filename='images/default-product.jpg') }}"
+             alt="{{ product['name'] }}">
+
+        <!-- Product Details -->
+        <section class="product-details">
+            <p><strong>Price:</strong> ${{ product['price'] }}</p>
+            <p><strong>Description:</strong> {{ product['description'] }}</p>
+            <p><strong>Material:</strong> {{ product.get('material', 'N/A') }}</p>
+            <p><strong>Stock Availability:</strong>
+                {% if product['countInStock'] > 0 %}
+                In Stock (<span id="stock">{{ product['countInStock'] }}</span> left)
+                {% else %}
+                Out of Stock
+                {% endif %}
+            </p>
+        </section>
+
+        <!-- Add to Cart -->
+        <section class="cart-section">
+            {% if product['countInStock'] > 0 %}
+            <form id="addToCartForm">
+                <label for="quantity"><strong>Quantity:</strong></label>
+                <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product['countInStock'] }}">
+
+                <!-- Product Variants -->
+                {% if product.get('variants') %}
+                <label for="variant"><strong>Choose a Variant:</strong></label>
+                <select id="variant" name="variant">
+                    {% for variant in product['variants'] %}
+                    <option value="{{ variant['id'] }}">{{ variant['size'] }} - {{ variant['color'] }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+
+                <button type="button" class="button" onclick="addToCart()">Add to Cart</button>
+            </form>
+            {% else %}
+            <p>Sorry, this product is currently out of stock.</p>
+            {% endif %}
+        </section>
+
+        <!-- Reviews Section -->
+        <section class="reviews-section">
+            <h2>Customer Reviews</h2>
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="review">
+                    <p><strong>{{ review['user'] }}:</strong> {{ review['rating'] }}/5</p>
+                    <p>{{ review['comment'] }}</p>
+                </div>
+                <hr>
+                {% endfor %}
+            {% else %}
+            <p>No reviews yet. Be the first to review this product!</p>
+            {% endif %}
+
+            <!-- Review Form -->
+{#            {% if session.get('customer_id') %}#}
+{#            <form id="reviewForm" method="POST" action="{{ url_for('product.add_review', product_id=product['_id']) }}">#}
+{#                <label for="rating">Rating:</label>#}
+{#                <select id="rating" name="rating">#}
+{#                    {% for i in range(1, 6) %}#}
+{#                    <option value="{{ i }}">{{ i }}</option>#}
+{#                    {% endfor %}#}
+{#                </select>#}
+{#                <br>#}
+{#                <label for="comment">Comment:</label>#}
+{#                <textarea id="comment" name="comment" rows="4"></textarea>#}
+{#                <br>#}
+{#                <button type="submit" class="button">Submit Review</button>#}
+{#            </form>#}
+{#            {% else %}#}
+{#            <p><a href="/auth/login">Log in</a> to write a review.</p>#}
+{#            {% endif %}#}
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Online Clothing Store</p>
+    </footer>
+
+    <!-- Add to Cart Script -->
+    <script>
+        function addToCart() {
+            const quantity = document.getElementById('quantity').value;
+            const variant = document.getElementById('variant') ? document.getElementById('variant').value : null;
+
+            fetch('{{ url_for("cart.add_to_cart", product_id=product["_id"]) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: quantity, variant: variant })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    const stockElement = document.getElementById('stock');
+                    const currentStock = parseInt(stockElement.textContent);
+                    stockElement.textContent = currentStock - quantity;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

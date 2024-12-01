@@ -1,0 +1,78 @@
+header nav {
+	background-color: #ffffff;
+	width: 100%;
+	font-size: 0;
+	vertical-align: middle;
+	height: 6.6rem;
+	line-height: 6.6rem;
+	-webkit-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.4);
+	box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+header nav .nav-common {
+	display: inline-block;
+}
+
+header nav .logo {
+	width: 20%;
+	text-align: center;
+	font-size: 16px;
+}
+
+header nav ul {
+	width: 65%;
+	list-style: none;
+	/*  font-size: 0;*/
+	font-size: 16px;
+}
+
+header nav ul li {
+	display: inline-block;
+	width: 18%;
+	text-align: center;
+}
+
+header nav ul li a {
+	text-transform: uppercase;
+	color: rgb(89, 89, 89);
+	font-size: 16px;
+	font-weight: 500;
+	text-decoration: none;
+}
+
+header nav ul li a:hover {
+	color: rgba(89, 89, 89, 0.6);
+}
+
+header nav .nav-icon {
+	width: 7.5%;
+	text-align: center;
+	font-size: 16px;
+}
+
+@media only screen and (max-width: 768px) {
+	header nav {
+		height: 5rem;
+		line-height: 5rem;
+	}
+	header nav .logo {
+		width: 45%;
+	}
+	header nav .nav-icon img {
+		margin-top: 1.4rem;
+	}
+	header nav ul {
+		width: 20%;
+		display: none;
+	}
+	header nav ul li {
+		display: none;
+	}
+	header nav .cart {
+		width: 15%;
+		text-align: right;
+	}
+	header nav .menu {
+		width: 20%;
+	}
+}

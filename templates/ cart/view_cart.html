@@ -1,0 +1,21 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Cart - Online Clothing Store{% endblock %}
+
+{% block content %}
+<h1>Your Shopping Cart</h1>
+<div class="cart-items">
+    {% for item in cart_items %}
+    <div class="cart-item">
+        <img src="{{ item.image_url }}" alt="{{ item.name }}">
+        <div>
+            <h3>{{ item.name }}</h3>
+            <p>Quantity: {{ item.quantity }}</p>
+            <p>Price: ${{ item.price }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<p>Total: ${{ total_price }}</p>
+<a href="/checkout" class="btn">Proceed to Checkout</a>
+{% endblock %}
