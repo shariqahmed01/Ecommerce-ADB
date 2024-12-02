@@ -1,5 +1,6 @@
 from flask import Blueprint
 from .auth import auth_bp
+from .checkout import checkout_bp
 from .contact import contact_bp
 from .product import product_bp
 from .cart import cart_bp
@@ -20,3 +21,4 @@ def register_blueprints(app):
     app.register_blueprint(delivery_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(contact_bp)
+    app.register_blueprint(checkout_bp)

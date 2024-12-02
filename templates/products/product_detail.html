@@ -108,8 +108,8 @@
             <ul class="nav-common">
                 <li><a href="/">home</a></li>
                 <li><a href="/products">products</a></li>
-                <li><a href="/cart">cart</a></li>
-                <li><a href="/contact">contact</a></li>
+                <li><a href="/cart/view">cart</a></li>
+                <li><a href="/contact/">contact</a></li>
                 {% if session.get('customer_name') %}
                 <li><p>Welcome, {{ session.get('customer_name') }}</p></li>
                 <li><a href="/auth/logout">logout</a></li>
