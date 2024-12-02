@@ -167,25 +167,29 @@
     <!-- Add to Cart Script -->
     <script>
         function addToCart() {
-            const quantity = document.getElementById('quantity').value;
-            const variant = document.getElementById('variant') ? document.getElementById('variant').value : null;
+    const productId = "{{ product['_id'] }}"; // Explicitly use product ID as a string
+    const quantity = document.getElementById('quantity').value;
+    const variant = document.getElementById('variant') ? document.getElementById('variant').value : null;
 
-            fetch('{{ url_for("cart.add_to_cart", product_id=product["_id"]) }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ quantity: quantity, variant: variant })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-                if (data.success) {
-                    const stockElement = document.getElementById('stock');
-                    const currentStock = parseInt(stockElement.textContent);
-                    stockElement.textContent = currentStock - quantity;
-                }
-            })
-            .catch(error => console.error('Error:', error));
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity), variant_id: variant })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            const stockElement = document.getElementById('stock');
+            const currentStock = parseInt(stockElement.textContent);
+            stockElement.textContent = currentStock - quantity;
         }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
     </script>
 </body>
 </html>

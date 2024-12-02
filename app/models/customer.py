@@ -14,9 +14,18 @@ class Customer:
 
     @staticmethod
     def get_customer_by_id(customer_id):
-        """Fetch a customer by ID."""
+        """Fetch a customer by their ID."""
         try:
             customer_id = ObjectId(customer_id)
         except Exception:
             return None
         return mongo.db.Customer.find_one({"_id": customer_id})
+
+    @staticmethod
+    def update_customer_cart(customer_id, cart):
+        """Update the cart for a specific customer."""
+        try:
+            customer_id = ObjectId(customer_id)
+        except Exception:
+            return None
+        return mongo.db.Customer.update_one({"_id": customer_id}, {"$set": {"cart": cart}})

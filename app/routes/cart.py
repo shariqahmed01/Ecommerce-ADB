@@ -1,98 +1,139 @@
-from flask import Blueprint, request, jsonify, abort, session
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for
+from app.models.customer import Customer
 from app.models.product import Product
+from bson.objectid import ObjectId
 
 cart_bp = Blueprint('cart', __name__, url_prefix='/cart')
 
-@cart_bp.route('/', methods=['GET'])
-def view_cart():
-    """View all items in the cart."""
-    cart = session.get('cart', [])
+def get_customer():
+    """Fetch the current logged-in customer."""
+    customer_id = session.get('customer_id')
+    if not customer_id:
+        return None
+    return Customer.get_customer_by_id(customer_id)
+
+@cart_bp.route('/view', methods=['GET'])
+def view_cart_page():
+    """Render the cart page."""
+    customer = Customer.get_customer_by_id(session.get('customer_id'))
+    if not customer:
+        return redirect(url_for('auth.login'))
+
+    cart = customer.get('cart', [])
     cart_details = []
 
     for item in cart:
-        product = Product.get_product_by_id(item['product_id'])
+        product = Product.get_product_by_id(item['productId'])
         if product:
-            variant = next((v for v in product.get('variants', []) if v['id'] == item.get('variant_id')), None)
             cart_details.append({
-                "product_id": item['product_id'],
+                "product_id": str(item['productId']),
                 "name": product['name'],
                 "price": product['price'],
                 "quantity": item['quantity'],
-                "variant": variant,  # Include variant details
                 "total": product['price'] * item['quantity']
             })
 
-    return jsonify({"cart": cart_details})
+    return render_template('cart/view_cart.html', cart=cart_details)
+
 
 
 @cart_bp.route('/add', methods=['POST'])
 def add_to_cart():
     """Add an item to the cart."""
-    product_id = None
-    quantity = 1
-    variant_id = None
+    data = request.get_json()
+    if not data:
+        return jsonify({"message": "No data provided.", "success": False}), 400
 
-    # Check for JSON data in the request
-    if request.is_json:
-        data = request.get_json()
-        product_id = data.get('product_id')
-        quantity = data.get('quantity', 1)
-        variant_id = data.get('variant_id')
-    else:
-        # Fallback to query parameters
-        product_id = request.args.get('product_id')
-        quantity = request.args.get('quantity', 1, type=int)
-        variant_id = request.args.get('variant_id')
+    product_id = data.get('product_id')
+    quantity = data.get('quantity', 1)
+    variant_id = data.get('variant_id', None)
 
-    # Validate the product_id
+    # Validate product_id
     if not product_id:
         return jsonify({"message": "Product ID is required.", "success": False}), 400
 
-    # Validate the variant_id (optional)
+    try:
+        product_id = ObjectId(product_id)
+    except Exception:
+        return jsonify({"message": "Invalid Product ID format.", "success": False}), 400
+
+    # Fetch customer
+    customer = Customer.get_customer_by_id(session.get('customer_id'))
+    if not customer:
+        return jsonify({"message": "Please log in to add items to your cart.", "success": False}), 401
+
+    # Fetch product
     product = Product.get_product_by_id(product_id)
     if not product:
-        return jsonify({"message": "Invalid product ID.", "success": False}), 400
-    if variant_id and variant_id not in [v['id'] for v in product.get('variants', [])]:
-        return jsonify({"message": "Invalid variant ID.", "success": False}), 400
+        return jsonify({"message": "Product not found.", "success": False}), 404
 
-    # Initialize cart in session if not present
-    if 'cart' not in session:
-        session['cart'] = []
-
-    # Add or update product in cart
-    for item in session['cart']:
-        if item['product_id'] == product_id and item.get('variant_id') == variant_id:
+    # Update customer's cart
+    cart = customer.get('cart', [])
+    for item in cart:
+        if item['productId'] == product_id and item.get('variant_id') == variant_id:
             item['quantity'] += quantity
-            session.modified = True
+            Customer.update_customer_cart(customer['_id'], cart)
             return jsonify({"message": "Product quantity updated in cart.", "success": True})
 
-    # Add new product to the cart
-    session['cart'].append({
-        "product_id": product_id,
-        "quantity": quantity,
-        "variant_id": variant_id  # Include variant ID
-    })
-    session.modified = True
-
+    # Add new item to cart
+    cart.append({"productId": product_id, "quantity": quantity, "variant_id": variant_id})
+    Customer.update_customer_cart(customer['_id'], cart)
     return jsonify({"message": "Product added to cart.", "success": True})
+
 
 
 @cart_bp.route('/remove', methods=['POST'])
 def remove_from_cart():
     """Remove an item from the cart."""
-    product_id = request.json.get('product_id')
-    variant_id = request.json.get('variant_id')
-    cart = session.get('cart', [])
+    data = request.get_json() if request.is_json else request.form
+    product_id = data.get('product_id')
 
-    # Remove product from cart
-    session['cart'] = [item for item in cart if not (item['product_id'] == product_id and item.get('variant_id') == variant_id)]
-    session.modified = True
+    if not product_id:
+        return jsonify({"message": "Product ID is required.", "success": False}), 400
+
+    customer = Customer.get_customer_by_id(session.get('customer_id'))
+    if not customer:
+        return jsonify({"message": "Please log in to remove items from your cart.", "success": False}), 401
+
+    cart = customer.get('cart', [])
+    updated_cart = [item for item in cart if str(item['productId']) != product_id]
+    Customer.update_customer_cart(customer['_id'], updated_cart)
 
     return jsonify({"message": "Product removed from cart.", "success": True})
+
+
+@cart_bp.route('/update', methods=['POST'])
+def update_cart_quantity():
+    """Update the quantity of an item in the cart."""
+    data = request.get_json()
+    product_id = data.get('product_id')
+    quantity = data.get('quantity')
+
+    if not product_id or not quantity:
+        return jsonify({"message": "Product ID and quantity are required.", "success": False}), 400
+
+    customer = Customer.get_customer_by_id(session.get('customer_id'))
+    if not customer:
+        return jsonify({"message": "Please log in to update your cart.", "success": False}), 401
+
+    cart = customer.get('cart', [])
+    for item in cart:
+        if str(item['productId']) == product_id:
+            item['quantity'] = quantity
+            Customer.update_customer_cart(customer['_id'], cart)
+            return jsonify({"message": "Cart updated successfully.", "success": True})
+
+    return jsonify({"message": "Product not found in cart.", "success": False}), 404
+
+
 
 
 @cart_bp.route('/clear', methods=['POST'])
 def clear_cart():
     """Clear the cart."""
-    session.pop('cart', None)
+    customer = get_customer()
+    if not customer:
+        return jsonify({"message": "Please log in to clear your cart.", "success": False}), 401
+
+    Customer.update_customer_cart(customer['_id'], [])
     return jsonify({"message": "Cart cleared.", "success": True})
