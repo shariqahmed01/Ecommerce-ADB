@@ -8,7 +8,7 @@ def create_app(env="development"):
     """
     Application factory to create and configure the Flask app.
     """
-    app = Flask(__name__,template_folder='C:/Users/shari/Desktop/SujithADB/templates')
+    app = Flask(__name__,template_folder='C:/Users/Dell/OneDrive/Desktop/Ecommerce-ADB/templates')
     app.secret_key = "your_secret_key"
     # Load configuration based on the environment
     app.config.from_object(get_config(env))
