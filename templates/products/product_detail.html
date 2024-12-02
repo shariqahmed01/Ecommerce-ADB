@@ -1,170 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ product['name'] }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
-        /* Basic styling */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #333;
-            color: white;
+        /* Additional Styling for Product Details */
+        .product-details-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
             padding: 1rem;
-            text-align: center;
         }
-        main {
-            padding: 2rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
+
         .product-image {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        .product-details {
-            margin-top: 1rem;
-        }
-        .cart-section {
-            margin-top: 2rem;
-            padding: 20px;
-            border: 2px solid #4CAF50;
-            border-radius: 10px;
-            background-color: #e7ffe7;
-        }
-        .cart-section label {
-            display: block;
-            margin: 10px 0 5px;
-        }
-        footer {
-            background-color: #333;
-            color: white;
             text-align: center;
-            padding: 1rem;
-            margin-top: 2rem;
         }
-        .button {
+
+        .product-image img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .product-details {
+            background: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-details h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .product-details p {
+            margin: 0.5rem 0;
+            color: #555;
+        }
+
+        .product-details strong {
+            color: #333;
+        }
+
+        .cart-section {
+            margin-top: 1.5rem;
+        }
+
+        .cart-section input,
+        .cart-section select {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .cart-section button {
             background-color: #4CAF50;
             color: white;
             border: none;
             padding: 10px 20px;
-            margin: 10px 0;
+            margin-top: 1rem;
             cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
         }
-        .button:hover {
+
+        .cart-section button:hover {
             background-color: #45a049;
         }
+
+        .reviews-section {
+            margin-top: 2rem;
+        }
+
+        .reviews-section h2 {
+            margin-bottom: 1rem;
+        }
+
         .review {
             border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            background-color: #fff;
         }
-        .review p {
-            margin: 5px 0;
-        }
-        .reviews-section h2 {
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
+
+        .review strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
         }
     </style>
 </head>
+
 <body>
+    <!-- Header -->
     <header>
-        <h1>{{ product['name'] }}</h1>
+        <nav id="nav">
+            <div class="logo nav-common"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo"></div>
+            <ul class="nav-common">
+                <li><a href="/">home</a></li>
+                <li><a href="/products">products</a></li>
+                <li><a href="/cart">cart</a></li>
+                <li><a href="/contact">contact</a></li>
+                {% if session.get('customer_name') %}
+                <li><p>Welcome, {{ session.get('customer_name') }}</p></li>
+                <li><a href="/auth/logout">logout</a></li>
+                {% else %}
+                <li><a href="/auth/login">login</a></li>
+                {% endif %}
+            </ul>
+        </nav>
     </header>
 
+    <!-- Product Details -->
     <main>
-        <!-- Product Image -->
-        <img class="product-image" src="{{ product['imageUrls'][0] if product.get('imageUrls') else url_for('static', filename='images/default-product.jpg') }}"
-             alt="{{ product['name'] }}">
+        <div class="product-details-container">
+            <div class="product-image">
+                <img src="{{ product['imageUrls'][0] if product.get('imageUrls') else url_for('static', filename='images/default-product.jpg') }}" alt="{{ product['name'] }}">
+            </div>
+            <div class="product-details">
+                <h2>{{ product['name'] }}</h2>
+                <p><strong>Price:</strong> ${{ product['price'] }}</p>
+                <p><strong>Description:</strong> {{ product['description'] }}</p>
+                <p><strong>Material:</strong> {{ product.get('material', 'N/A') }}</p>
+                <p><strong>Stock Availability:</strong>
+                    {% if product['countInStock'] > 0 %}
+                    In Stock (<span id="stock">{{ product['countInStock'] }}</span> left)
+                    {% else %}
+                    Out of Stock
+                    {% endif %}
+                </p>
+                <section class="cart-section">
+                    {% if product['countInStock'] > 0 %}
+                    <form id="addToCartForm">
+                        <label for="quantity"><strong>Quantity:</strong></label>
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product['countInStock'] }}">
 
-        <!-- Product Details -->
-        <section class="product-details">
-            <p><strong>Price:</strong> ${{ product['price'] }}</p>
-            <p><strong>Description:</strong> {{ product['description'] }}</p>
-            <p><strong>Material:</strong> {{ product.get('material', 'N/A') }}</p>
-            <p><strong>Stock Availability:</strong>
-                {% if product['countInStock'] > 0 %}
-                In Stock (<span id="stock">{{ product['countInStock'] }}</span> left)
-                {% else %}
-                Out of Stock
-                {% endif %}
-            </p>
-        </section>
-
-        <!-- Add to Cart -->
-        <section class="cart-section">
-            {% if product['countInStock'] > 0 %}
-            <form id="addToCartForm">
-                <label for="quantity"><strong>Quantity:</strong></label>
-                <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product['countInStock'] }}">
-
-                <!-- Product Variants -->
-                {% if product.get('variants') %}
-                <label for="variant"><strong>Choose a Variant:</strong></label>
-                <select id="variant" name="variant">
-                    {% for variant in product['variants'] %}
-                    <option value="{{ variant['id'] }}">{{ variant['size'] }} - {{ variant['color'] }}</option>
-                    {% endfor %}
-                </select>
-                {% endif %}
-
-                <button type="button" class="button" onclick="addToCart()">Add to Cart</button>
-            </form>
-            {% else %}
-            <p>Sorry, this product is currently out of stock.</p>
-            {% endif %}
-        </section>
+                        {% if product.get('variants') %}
+                        <label for="variant"><strong>Choose a Variant:</strong></label>
+                        <select id="variant" name="variant">
+                            {% for variant in product['variants'] %}
+                            <option value="{{ variant['id'] }}">{{ variant['size'] }} - {{ variant['color'] }}</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                        <button type="button" onclick="addToCart()">Add to Cart</button>
+                    </form>
+                    {% else %}
+                    <p>Sorry, this product is currently out of stock.</p>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
 
         <!-- Reviews Section -->
-        <section class="reviews-section">
+        <div class="reviews-section">
             <h2>Customer Reviews</h2>
             {% if reviews %}
-                {% for review in reviews %}
-                <div class="review">
-                    <p><strong>{{ review['user'] }}:</strong> {{ review['rating'] }}/5</p>
-                    <p>{{ review['comment'] }}</p>
-                </div>
-                <hr>
-                {% endfor %}
+            {% for review in reviews %}
+            <div class="review">
+                <strong>{{ review['user'] }}:</strong>
+                <p>Rating: {{ review['rating'] }}/5</p>
+                <p>{{ review['comment'] }}</p>
+            </div>
+            {% endfor %}
             {% else %}
             <p>No reviews yet. Be the first to review this product!</p>
             {% endif %}
-
-            <!-- Review Form -->
-{#            {% if session.get('customer_id') %}#}
-{#            <form id="reviewForm" method="POST" action="{{ url_for('product.add_review', product_id=product['_id']) }}">#}
-{#                <label for="rating">Rating:</label>#}
-{#                <select id="rating" name="rating">#}
-{#                    {% for i in range(1, 6) %}#}
-{#                    <option value="{{ i }}">{{ i }}</option>#}
-{#                    {% endfor %}#}
-{#                </select>#}
-{#                <br>#}
-{#                <label for="comment">Comment:</label>#}
-{#                <textarea id="comment" name="comment" rows="4"></textarea>#}
-{#                <br>#}
-{#                <button type="submit" class="button">Submit Review</button>#}
-{#            </form>#}
-{#            {% else %}#}
-{#            <p><a href="/auth/login">Log in</a> to write a review.</p>#}
-{#            {% endif %}#}
-        </section>
+        </div>
     </main>
 
+    <!-- Footer -->
     <footer>
         <p>&copy; 2024 Online Clothing Store</p>
     </footer>
 
-    <!-- Add to Cart Script -->
     <script>
         function addToCart() {
     const productId = "{{ product['_id'] }}"; // Explicitly use product ID as a string
@@ -192,4 +210,5 @@
 
     </script>
 </body>
+
 </html>

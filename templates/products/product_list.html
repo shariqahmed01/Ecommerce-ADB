@@ -1,39 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        /* Additional Styling for Product List */
+        .product-list-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card img {
+            max-width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .product-card h3 {
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            color: #333;
+        }
+
+        .product-card p {
+            font-size: 1rem;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .product-card a {
+            display: inline-block;
+            margin: 1rem 0 1.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .product-card a:hover {
+            background-color: #45a049;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </head>
+
 <body>
+    <!-- Header -->
     <header>
-        <h1>Our Products</h1>
+        <nav id="nav">
+            <div class="logo nav-common"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo"></div>
+            <ul class="nav-common">
+                <li><a href="/">home</a></li>
+                <li><a href="/products">products</a></li>
+                <li><a href="/cart">cart</a></li>
+                <li><a href="/contact">contact</a></li>
+                {% if session.get('customer_name') %}
+                <li><p>Welcome, {{ session.get('customer_name') }}</p></li>
+                <li><a href="/auth/logout">logout</a></li>
+                {% else %}
+                <li><a href="/auth/login">login</a></li>
+                {% endif %}
+            </ul>
+        </nav>
     </header>
 
-    <section class="product-grid">
-    {% for product in products %}
-    <div class="product-card">
-        <!-- Display product image with fallback -->
-        <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}"
-             alt="{{ product.get('name', 'Unnamed Product') }}">
+    <!-- Product List -->
+    <main>
+        <div class="product-list-container">
+            <h1>Our Products</h1>
+            <p>Browse through our collection of amazing products.</p>
+            <div class="products-grid">
+                {% for product in products %}
+                <div class="product-card">
+                    <!-- Product Image -->
+                    <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}" alt="{{ product.get('name', 'Unnamed Product') }}">
 
-        <!-- Display product name and price -->
-        <h3>{{ product['name'] or 'Unnamed Product' }}</h3>
-        <p>${{ product['price'] if product.get('price') else 'N/A' }}</p>
+                    <!-- Product Name and Price -->
+                    <h3>{{ product['name'] or 'Unnamed Product' }}</h3>
+                    <p>${{ product['price'] if product.get('price') else 'N/A' }}</p>
 
-        <!-- Dynamic link to product details -->
-        <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">View Details</a>
-    </div>
-    {% else %}
-    <!-- Display message if no products are available -->
-    <p>No products available at the moment.</p>
-    {% endfor %}
-</section>
+                    <!-- Link to Product Details -->
+                    <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">View Details</a>
+                </div>
+                {% else %}
+                <!-- No Products Available -->
+                <p>No products available at the moment.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
 
-
+    <!-- Footer -->
     <footer>
         <p>&copy; 2024 Online Clothing Store</p>
     </footer>
 </body>
+
 </html>
