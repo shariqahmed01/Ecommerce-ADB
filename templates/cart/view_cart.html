@@ -1,61 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Cart</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cart.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* Basic styling */
+        /* Common styles */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f9f9f9;
         }
+
         header {
             background-color: #333;
             color: white;
             padding: 1rem;
-            text-align: center;
         }
+
+        header .nav-common {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header .nav-common ul {
+            list-style: none;
+            display: flex;
+            gap: 1rem;
+            padding: 0;
+            margin: 0;
+        }
+
+        header .nav-common a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        header .nav-common a:hover {
+            text-decoration: underline;
+        }
+
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 2rem auto;
+            padding: 2rem;
             background: white;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
         }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            color: #333;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
+
         th, td {
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background-color: #f4f4f4;
         }
+
+        td img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
         .cart-actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .cart-actions button {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
         }
+
         .cart-actions button:hover {
             background-color: #45a049;
         }
+
+        .empty-cart {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #666;
+        }
+
         footer {
             background-color: #333;
             color: white;
@@ -63,19 +120,41 @@
             padding: 1rem;
             margin-top: 2rem;
         }
+
+        footer p {
+            margin: 0;
+        }
     </style>
 </head>
+
 <body>
+    <!-- Header -->
     <header>
-        <h1>Your Cart</h1>
+        <div class="nav-common">
+            <div class="logo"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo"></div>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart</a></li>
+                <li><a href="/contact">Contact</a></li>
+                {% if session.get('customer_name') %}
+                <li><a href="/auth/logout">Logout ({{ session.get('customer_name') }})</a></li>
+                {% else %}
+                <li><a href="/auth/login">Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
     </header>
 
+    <!-- Cart Content -->
     <div class="container">
+        <h1>Your Cart</h1>
         {% if cart and cart|length > 0 %}
         <table>
             <thead>
                 <tr>
                     <th>Product</th>
+                    <th>Image</th>
                     <th>Price</th>
                     <th>Quantity</th>
                     <th>Total</th>
@@ -86,6 +165,7 @@
                 {% for item in cart %}
                 <tr data-product-id="{{ item.product_id }}">
                     <td>{{ item.name }}</td>
+                    <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}" alt="{{ item.name }}"></td>
                     <td>${{ item.price }}</td>
                     <td>
                         <select class="quantity-select" onchange="updateCartQuantity('{{ item.product_id }}', this.value)">
@@ -107,54 +187,60 @@
             <button onclick="window.location.href='/checkout'">Checkout</button>
         </div>
         {% else %}
-        <p>Your cart is empty. <a href="/products">Start shopping</a>.</p>
+        <div class="empty-cart">
+            <p>Your cart is empty. <a href="/products">Start shopping</a>.</p>
+        </div>
         {% endif %}
     </div>
 
-    <footer>
-        <p>&copy; 2024 Online Clothing Store</p>
-    </footer>
+    <!-- Footer -->
+	<footer>
+		<p class="copy-right"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412543/E-commerce%20landing%20page/icons/copy-right-img_1x.png" alt="copy right image" /> 2017 all right recived </p>
+		<p>privacy policy</p>
+		<p>license</p>
+	</footer>
 
-<script>
-    function updateCartQuantity(productId, quantity) {
-        fetch('/cart/update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity) })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const row = document.querySelector(`[data-product-id="${productId}"]`);
-                const price = parseFloat(row.querySelector('td:nth-child(2)').textContent.replace('$', ''));
-                const totalCell = row.querySelector('.item-total');
-                totalCell.textContent = `$${(price * quantity).toFixed(2)}`;
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
+    <script>
+        function updateCartQuantity(productId, quantity) {
+            fetch('/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.querySelector(`[data-product-id="${productId}"]`);
+                    const price = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('$', ''));
+                    const totalCell = row.querySelector('.item-total');
+                    totalCell.textContent = `$${(price * quantity).toFixed(2)}`;
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
 
-    function removeFromCart(productId) {
-        fetch('/cart/remove', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ product_id: productId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload(); // Reload the page to update the cart
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-</script>
+        function removeFromCart(productId) {
+            fetch('/cart/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload(); // Reload the page to update the cart
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
+
 </html>
