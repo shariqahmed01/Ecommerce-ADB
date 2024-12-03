@@ -7,7 +7,24 @@
     <title>{{ product['name'] }}</title>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
-        /* Additional Styling for Product Details */
+        /* General Reset and Layout */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        main {
+            flex: 1; /* Pushes footer to the bottom if content is short */
+        }
+
+        /* Styling for Product Details */
         .product-details-container {
             max-width: 1200px;
             margin: 2rem auto;
@@ -101,26 +118,10 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <header>
-        <nav id="nav">
-            <div class="logo nav-common"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo"></div>
-            <ul class="nav-common">
-                <li><a href="/">home</a></li>
-                <li><a href="/products">products</a></li>
-                <li><a href="/cart/view">cart</a></li>
-                <li><a href="/contact/">contact</a></li>
-                {% if session.get('customer_name') %}
-                <li><p>Welcome, {{ session.get('customer_name') }}</p></li>
-                <li><a href="/auth/logout">logout</a></li>
-                {% else %}
-                <li><a href="/auth/login">login</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </header>
+    <!-- Include Header -->
+    {% include "layouts/header.html" %}
 
-    <!-- Product Details -->
+    <!-- Main Content -->
     <main>
         <div class="product-details-container">
             <div class="product-image">
@@ -178,36 +179,33 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2024 Online Clothing Store</p>
-    </footer>
+    <!-- Include Footer -->
+    {% include "layouts/footer.html" %}
 
     <script>
         function addToCart() {
-    const productId = "{{ product['_id'] }}"; // Explicitly use product ID as a string
-    const quantity = document.getElementById('quantity').value;
-    const variant = document.getElementById('variant') ? document.getElementById('variant').value : null;
+            const productId = "{{ product['_id'] }}"; // Explicitly use product ID as a string
+            const quantity = document.getElementById('quantity').value;
+            const variant = document.getElementById('variant') ? document.getElementById('variant').value : null;
 
-    fetch('/cart/add', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity), variant_id: variant })
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-        if (data.success) {
-            const stockElement = document.getElementById('stock');
-            const currentStock = parseInt(stockElement.textContent);
-            stockElement.textContent = currentStock - quantity;
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity), variant_id: variant })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    const stockElement = document.getElementById('stock');
+                    const currentStock = parseInt(stockElement.textContent);
+                    stockElement.textContent = currentStock - quantity;
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
-    })
-    .catch(error => console.error('Error:', error));
-}
-
     </script>
 </body>
 

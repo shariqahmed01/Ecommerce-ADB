@@ -7,7 +7,25 @@
     <title>Product List</title>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
-        /* Styling for Product List */
+        /* General Reset */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        /* Flexbox for Layout */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        main {
+            flex: 1; /* Pushes the footer to the bottom */
+        }
+
+        /* Product List Styling */
         .product-list-container {
             max-width: 1200px;
             margin: 2rem auto;
@@ -59,28 +77,10 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <header>
-        <nav id="nav">
-            <div class="logo nav-common">
-                <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo">
-            </div>
-            <ul class="nav-common">
-                <li><a href="/">home</a></li>
-                <li><a href="/products">products</a></li>
-                <li><a href="/cart/view">cart</a></li>
-                <li><a href="/contact">contact</a></li>
-                {% if session.get('customer_name') %}
-                <li><p>Welcome, {{ session.get('customer_name') }}</p></li>
-                <li><a href="/auth/logout">logout</a></li>
-                {% else %}
-                <li><a href="/auth/login">login</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </header>
+    <!-- Include Header -->
+    {% include "layouts/header.html" %}
 
-    <!-- Product List -->
+    <!-- Main Content -->
     <main>
         <div class="product-list-container">
             <h1>Our Products</h1>
@@ -104,10 +104,8 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2024 Online Clothing Store</p>
-    </footer>
+    <!-- Include Footer -->
+    {% include "layouts/footer.html" %}
 </body>
 
 </html>

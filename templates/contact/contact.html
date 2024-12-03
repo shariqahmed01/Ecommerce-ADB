@@ -1,24 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/contact.css') }}">
     <style>
-        /* Basic styling */
-        body {
-            font-family: Arial, sans-serif;
+        /* General Reset and Layout */
+        html, body {
             margin: 0;
             padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
             background-color: #f9f9f9;
         }
-        header {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 1.5rem 0;
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
         }
+
+        main {
+            flex: 1; /* Ensures the footer is pushed to the bottom */
+        }
+
+        /* Contact Form Container */
         .container {
             max-width: 600px;
             margin: 2rem auto;
@@ -27,15 +35,18 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             text-align: center;
             color: #333;
         }
+
         label {
             display: block;
             margin-top: 1rem;
             font-weight: bold;
         }
+
         input, textarea {
             width: 100%;
             padding: 0.8rem;
@@ -43,9 +54,11 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+
         textarea {
             height: 150px;
         }
+
         button {
             width: 100%;
             padding: 1rem;
@@ -56,38 +69,38 @@
             cursor: pointer;
             margin-top: 1rem;
         }
+
         button:hover {
             background-color: #45a049;
         }
-        footer {
-            text-align: center;
-            background-color: #333;
-            color: white;
-            padding: 1rem;
-            margin-top: 2rem;
-        }
     </style>
 </head>
+
 <body>
-    <header>
-        <h1>Contact Us</h1>
-    </header>
-    <div class="container">
-        <form action="{{ url_for('contact.submit_contact') }}" method="POST">
-            <label for="name">Your Name</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+    <!-- Include Header -->
+    {% include "layouts/header.html" %}
 
-            <label for="email">Your Email</label>
-            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <h1>Contact Us</h1>
+            <form action="{{ url_for('contact.submit_contact') }}" method="POST">
+                <label for="name">Your Name</label>
+                <input type="text" id="name" name="name" placeholder="Enter your name" required>
 
-            <label for="message">Message</label>
-            <textarea id="message" name="message" placeholder="Write your message here..." required></textarea>
+                <label for="email">Your Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
 
-            <button type="submit">Send Message</button>
-        </form>
-    </div>
-    <footer>
-        <p>&copy; 2024 Online Clothing Store. All rights reserved.</p>
-    </footer>
+                <label for="message">Message</label>
+                <textarea id="message" name="message" placeholder="Write your message here..." required></textarea>
+
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Include Footer -->
+    {% include "layouts/footer.html" %}
 </body>
+
 </html>

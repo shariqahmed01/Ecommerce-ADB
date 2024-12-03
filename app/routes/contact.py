@@ -5,7 +5,7 @@ contact_bp = Blueprint('contact', __name__, url_prefix='/contact')
 @contact_bp.route('/', methods=['GET'])
 def contact_page():
     """Render the contact page."""
-    return render_template('Contact/contact.html')
+    return render_template('contact/contact.html')
 
 @contact_bp.route('/submit', methods=['POST'])
 def submit_contact():
