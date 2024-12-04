@@ -23,7 +23,7 @@
         }
 
         main {
-            flex: 1; /* Pushes footer to the bottom if content is short */
+            flex: 1;
         }
 
         .container {
@@ -56,6 +56,13 @@
             background-color: #f4f4f4;
         }
 
+        td img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
         .form-group {
             margin-top: 1.5rem;
         }
@@ -64,7 +71,7 @@
             font-weight: bold;
         }
 
-        input, textarea {
+        input, textarea, select {
             width: 100%;
             padding: 0.8rem;
             margin-top: 0.5rem;
@@ -85,57 +92,165 @@
         button:hover {
             background-color: #45a049;
         }
+
+        .totals {
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+        .totals p {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+
+        .totals .grand-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .coupon-section {
+            margin-bottom: 2rem;
+        }
+
+        .card-details {
+            margin-top: 1.5rem;
+        }
+
+        .card-details input {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Include Header -->
-    {% include "layouts/header.html" %}
+<!-- Include Header -->
+{% include "layouts/header.html" %}
 
-    <!-- Main Content -->
-    <main>
-        <div class="container">
-            <h1>Checkout</h1>
-            <h2>Review Your Cart</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in cart %}
-                    <tr>
-                        <td>{{ item.name }}</td>
-                        <td>${{ item.price }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>${{ item.total }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Main Content -->
+<main>
+    <div class="container">
+        <h1>Checkout</h1>
+        <h2>Review Your Cart</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Image</th>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in cart %}
+                <tr>
+                    <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}" alt="{{ item.name }}"></td>
+                    <td>{{ item.name }}</td>
+                    <td>${{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.total }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
 
-            <h2>Shipping Information</h2>
-            <form action="{{ url_for('checkout.process_payment') }}" method="POST">
-                <div class="form-group">
-                    <label for="address">Shipping Address</label>
-                    <textarea id="address" name="address" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="contact">Contact Number</label>
-                    <input type="text" id="contact" name="contact" required>
-                </div>
-
-                <button type="submit">Proceed to Payment</button>
-            </form>
+        <!-- Order Totals -->
+        <div class="totals">
+            <p>Subtotal: ${{ subtotal }}</p>
+            <p>Tax (10%): ${{ tax }}</p>
+            <p>Shipping: $<span id="shipping_cost">{{ shipping }}</span></p>
+            <p class="grand-total">Grand Total: $<span id="grand_total">{{ grand_total }}</span></p>
         </div>
-    </main>
 
-    <!-- Include Footer -->
-    {% include "layouts/footer.html" %}
-</body>
+        <!-- Coupon Section -->
+        <div class="coupon-section">
+            <label for="coupon">Have a coupon code?</label>
+            <input type="text" id="coupon" placeholder="Enter coupon code">
+            <button onclick="applyCoupon()">Apply Coupon</button>
+        </div>
 
-</html>
+        <h2>Shipping Information</h2>
+        <form action="{{ url_for('checkout.process_payment') }}" method="POST">
+            <div class="form-group">
+                <label for="address">Shipping Address</label>
+                <textarea id="address" name="address" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="contact">Contact Number</label>
+                <input type="text" id="contact" name="contact" required>
+            </div>
+
+            <!-- Shipping Options -->
+            <div class="form-group">
+                <label for="shipping_method">Select Shipping Method</label>
+                <select id="shipping_method" name="shipping_method" onchange="updateShippingCost()" required>
+                    <option value="standard" data-cost="5">Standard Shipping ($5)</option>
+                    <option value="fast" data-cost="15">Fast Shipping ($15)</option>
+                </select>
+            </div>
+
+            <!-- Payment Method -->
+            <h2>Payment Method</h2>
+            <div class="form-group"><label for="payment_method">Select Payment Method</label> <select
+                    id="payment_method" name="payment_method" required>
+                <option value="credit_card" selected="selected">Credit/Debit Card</option>
+                <option value="paypal">PayPal</option>
+                <option value="digital_wallet">Digital Wallet</option>
+            </select></div>
+            <!-- Card Details -->
+            <div id="card_details" class="card-details">
+                <div class="form-group">
+                    <label for="cardholder_name">Cardholder Name</label>
+                    <input type="text" id="cardholder_name" name="cardholder_name" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="card_number">Card Number</label>
+                    <input type="text" id="card_number" name="card_number" placeholder="1234 5678 9012 3456">
+                </div>
+                <div class="form-group">
+                    <label for="expiry_date">Expiry Date</label>
+                    <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/YY">
+                </div>
+                <div class="form-group">
+                    <label for="cvv">CVV</label>
+                    <input type="text" id="cvv" name="cvv" placeholder="123">
+                </div>
+            </div>
+
+            <button type="submit">Proceed to Payment</button>
+        </form>
+    </div>
+</main>
+
+<!-- Include Footer -->
+{% include "layouts/footer.html" %}
+
+<!-- Scripts -->
+<script>
+    function applyCoupon() {
+        const coupon = document.getElementById('coupon').value;
+        alert('Applying coupon: ' + coupon);
+        // Send the coupon code to the backend for validation
+    }
+
+    function updateShippingCost() {
+        const shippingMethod = document.getElementById('shipping_method');
+        const selectedOption = shippingMethod.options[shippingMethod.selectedIndex];
+        const shippingCost = parseFloat(selectedOption.getAttribute('data-cost'));
+        const subtotal = parseFloat({{ subtotal }});
+        const tax = parseFloat({{ tax }});
+        const grandTotal = subtotal + tax + shippingCost;
+
+        document.getElementById('shipping_cost').innerText = shippingCost.toFixed(2);
+        document.getElementById('grand_total').innerText = grandTotal.toFixed(2);
+    }
+
+    document.getElementById('payment_method').addEventListener('change', function () {
+        const cardDetails = document.getElementById('card_details');
+        if (this.value === 'credit_card') {
+            cardDetails.style.display = 'block';
+        } else {
+            cardDetails.style.display = 'none';
+        }
+    });
+</script>

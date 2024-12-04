@@ -21,19 +21,35 @@ def view_cart_page():
 
     cart = customer.get('cart', [])
     cart_details = []
+    subtotal = 0
 
     for item in cart:
         product = Product.get_product_by_id(item['productId'])
         if product:
+            item_total = product['price'] * item['quantity']
+            subtotal += item_total
             cart_details.append({
                 "product_id": str(item['productId']),
                 "name": product['name'],
                 "price": product['price'],
                 "quantity": item['quantity'],
-                "total": product['price'] * item['quantity']
+                "total": round(item_total, 2),
+                "image": product['imageUrls'][0] if product.get('imageUrls') else None
             })
 
-    return render_template('cart/view_cart.html', cart=cart_details)
+    tax = round(subtotal * 0.1, 2)  # 10% tax
+    shipping = 5.0  # Flat shipping fee
+    grand_total = round(subtotal + tax + shipping, 2)
+
+    return render_template(
+        'cart/view_cart.html',
+        cart=cart_details,
+        subtotal=subtotal,
+        tax=tax,
+        shipping=shipping,
+        grand_total=grand_total
+    )
+
 
 
 
@@ -85,21 +101,27 @@ def add_to_cart():
 @cart_bp.route('/remove', methods=['POST'])
 def remove_from_cart():
     """Remove an item from the cart."""
+    # Extract product_id from JSON or form data
     data = request.get_json() if request.is_json else request.form
     product_id = data.get('product_id')
 
+    # Validate product_id
     if not product_id:
         return jsonify({"message": "Product ID is required.", "success": False}), 400
 
-    customer = Customer.get_customer_by_id(session.get('customer_id'))
+    # Fetch the current customer
+    customer_id = session.get('customer_id')
+    customer = Customer.get_customer_by_id(customer_id)
     if not customer:
         return jsonify({"message": "Please log in to remove items from your cart.", "success": False}), 401
 
+    # Update the cart
     cart = customer.get('cart', [])
     updated_cart = [item for item in cart if str(item['productId']) != product_id]
     Customer.update_customer_cart(customer['_id'], updated_cart)
 
     return jsonify({"message": "Product removed from cart.", "success": True})
+
 
 
 @cart_bp.route('/update', methods=['POST'])

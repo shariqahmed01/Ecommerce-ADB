@@ -63,10 +63,25 @@
             border-radius: 4px;
         }
 
+        .totals {
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+        .totals p {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+
+        .totals .grand-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
         .cart-actions {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            margin-top: 2rem;
         }
 
         .cart-actions button {
@@ -125,7 +140,7 @@
                                 {% endfor %}
                             </select>
                         </td>
-                        <td class="item-total">${{ item.total }}</td>
+                        <td>${{ item.total }}</td>
                         <td>
                             <button onclick="removeFromCart('{{ item.product_id }}')">Remove</button>
                         </td>
@@ -133,6 +148,16 @@
                     {% endfor %}
                 </tbody>
             </table>
+
+            <!-- Totals Section -->
+            <div class="totals">
+                <p>Subtotal: ${{ subtotal }}</p>
+                <p>Tax (10%): ${{ tax }}</p>
+                <p>Shipping: ${{ shipping }}</p>
+                <p class="grand-total">Grand Total: ${{ grand_total }}</p>
+            </div>
+
+            <!-- Cart Actions -->
             <div class="cart-actions">
                 <button onclick="window.location.href='/products'">Continue Shopping</button>
                 <button onclick="window.location.href='/checkout'">Checkout</button>
@@ -147,6 +172,27 @@
 
     <!-- Include Footer -->
     {% include "layouts/footer.html" %}
+
+    <!-- Scripts -->
+    <script>
+        function removeFromCart(productId) {
+            fetch('/cart/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to remove item.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
 
 </html>

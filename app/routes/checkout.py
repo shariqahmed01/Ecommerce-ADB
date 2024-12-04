@@ -11,103 +11,80 @@ checkout_bp = Blueprint('checkout', __name__, url_prefix='/checkout')
 
 @checkout_bp.route('/', methods=['GET'])
 def checkout():
-    """Render the checkout page."""
-    # Get the current customer's cart
     customer_id = session.get('customer_id')
 
     if not customer_id:
-        return redirect(url_for('auth.login'))  # Redirect to login if not logged in
+        return redirect(url_for('auth.login'))
 
     customer = Customer.get_customer_by_id(customer_id)
     if not customer:
         return redirect(url_for('auth.login'))
 
     cart = customer.get('cart', [])
-    cart_details = []
+    subtotal = sum(item['quantity'] * Product.get_product_by_id(item['productId'])['price'] for item in cart)
+    tax = round(subtotal * 0.1, 2)  # 10% tax
+    shipping = 5.0  # Fixed shipping charge
+    grand_total = round(subtotal + tax + shipping, 2)
 
+    cart_details = []
     for item in cart:
         product = Product.get_product_by_id(item['productId'])
         if product:
             cart_details.append({
-                "product_id": str(item['productId']),
                 "name": product['name'],
                 "price": product['price'],
                 "quantity": item['quantity'],
-                "total": product['price'] * item['quantity']
+                "total": round(product['price'] * item['quantity'], 2)
             })
 
-    # You can also fetch shipping info here (address, contact, etc.)
-    return render_template('checkout/checkout.html', cart=cart_details)
+    return render_template(
+        'checkout/checkout.html',
+        cart=cart_details,
+        subtotal=subtotal,
+        tax=tax,
+        shipping=shipping,
+        grand_total=grand_total
+    )
+
 
 @checkout_bp.route('/process_payment', methods=['POST'])
 def process_payment():
-    """Process payment and complete the order."""
-    # Check if order has already been placed in the session
     if session.get('order_placed', False):
-        return jsonify({"message": "Order already placed. Redirecting...", "success": False}), 400
+        return jsonify({"message": "Order already placed.", "success": False}), 400
 
-    # Capture shipping information
     address = request.form.get('address')
     contact = request.form.get('contact')
+    payment_method = request.form.get('payment_method')
 
-    # Process the payment (this is just a placeholder for actual payment gateway integration)
-    payment_successful = True  # Assume the payment was successful for now
+    customer_id = session.get('customer_id')
+    customer = Customer.get_customer_by_id(customer_id)
 
-    if payment_successful:
-        # Get the current customer
-        customer_id = session.get('customer_id')
-        customer = Customer.get_customer_by_id(customer_id)
+    if not customer:
+        return jsonify({"message": "Customer not found.", "success": False}), 400
 
-        if not customer:
-            return jsonify({"message": "Customer not found.", "success": False}), 400
+    cart = customer.get('cart', [])
+    total_amount = sum(item['quantity'] * Product.get_product_by_id(item['productId'])['price'] for item in cart)
 
-        # Get the cart from the customer's data
-        cart = customer.get('cart', [])
-        items = []
+    # Create the order
+    order_data = {
+        "customerId": ObjectId(customer_id),
+        "orderDate": datetime.utcnow(),
+        "items": cart,
+        "totalAmount": total_amount,
+        "status": "pending",
+        "shippingAddress": address,
+        "contact": contact,
+        "paymentMethod": payment_method
+    }
 
-        # Prepare the order items
-        total_amount = 0
-        for item in cart:
-            product = Product.get_product_by_id(item['productId'])
-            variant = ProductVariant.get_variant_by_id(item.get('variant_id'))
+    order_id = Order.create_order(order_data)
 
-            if product:
-                # Calculate total price for the items
-                total_amount += product['price'] * item['quantity']
+    session['order_placed'] = True
+    Customer.update_customer_cart(customer['_id'], [])
 
-                # Add item details
-                items.append({
-                    "productId": ObjectId(item['productId']),
-                    "variantId": ObjectId(item['variant_id']) if variant else None,
-                    "quantity": item['quantity'],
-                    "price": product['price']
-                })
+    return jsonify({
+        "message": "Payment successful. Order is being processed.",
+        "order_id": str(order_id),
+        "success": True
+    })
 
-        # Create the order
-        order_data = {
-            "customerId": ObjectId(customer_id),
-            "orderDate": datetime.utcnow(),
-            "items": items,
-            "totalAmount": total_amount,
-            "status": "pending",  # Status can be changed later to "completed", "shipped", etc.
-            "shippingAddress": address,
-            "contact": contact
-        }
-
-        # Insert the order into the database
-        order_id = Order.create_order(order_data)
-
-        # Mark that the order has been placed in the session to prevent duplicates
-        session['order_placed'] = True
-
-        # Clear the cart after successful order placement
-        Customer.update_customer_cart(customer['_id'], [])
-
-        return jsonify({
-            "message": "Payment successful. Your order is being processed.",
-            "order_id": str(order_id),
-            "success": True
-        })
-
-    else:
-        return jsonify({"message": "Payment failed. Please try again.", "success": False}), 500
