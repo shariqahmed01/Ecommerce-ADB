@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Products</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,13 +12,8 @@
             padding: 0;
             background-color: #f9f9f9;
         }
-        header {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 1rem;
-        }
-        .container {
+
+        main {
             max-width: 1200px;
             margin: 2rem auto;
             background: white;
@@ -26,33 +21,45 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 2rem;
         }
+
         th, td {
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background-color: #f4f4f4;
         }
+
         .form-group {
             margin-bottom: 1rem;
         }
+
         label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: bold;
         }
+
         input, textarea {
             width: 100%;
             padding: 0.8rem;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+
         button {
             padding: 0.8rem 1.5rem;
             background-color: #4CAF50;
@@ -61,85 +68,93 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         .action-buttons button {
             margin-right: 0.5rem;
         }
     </style>
 </head>
+
 <body>
-<header>
-    <h1>Manage Products</h1>
-</header>
+    <!-- Include Admin Header -->
+    {% include "layouts/admin_header.html" %}
 
-<div class="container">
-    <h2>All Products</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in products %}
-            <tr>
-                <td>{{ product['name'] }}</td>
-                <td>{{ product['description'] }}</td>
-                <td>${{ product['price'] }}</td>
-                <td>{{ product['countInStock'] }}</td>
-                <td class="action-buttons">
-                    <!-- Edit Button -->
-                    <form action="{{ url_for('admin.edit_product', product_id=product['_id']) }}" method="POST" style="display:inline;">
-                        <button type="submit">Edit</button>
-                    </form>
-                    <!-- Delete Button -->
-                    <form action="{{ url_for('admin.remove_product', product_id=product['_id']) }}" method="POST" style="display:inline;">
-                        <button type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Main Content -->
+    <main>
+        <h1>Manage Products</h1>
+        <h2>All Products</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product['name'] }}</td>
+                    <td>{{ product['description'] }}</td>
+                    <td>${{ product['price'] }}</td>
+                    <td>{{ product['countInStock'] }}</td>
+                    <td class="action-buttons">
+                        <!-- Edit Button -->
+                        <form action="{{ url_for('admin.edit_product', product_id=product['_id']) }}" method="POST" style="display:inline;">
+                            <button type="submit">Edit</button>
+                        </form>
+                        <!-- Delete Button -->
+                        <form action="{{ url_for('admin.remove_product', product_id=product['_id']) }}" method="POST" style="display:inline;">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <h2>Add New Product</h2>
-    <form action="{{ url_for('admin.add_product') }}" method="POST">
-        <div class="form-group">
-            <label for="name">Name</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="price">Price</label>
-            <input type="number" id="price" name="price" step="0.01" required>
-        </div>
-        <div class="form-group">
-            <label for="countInStock">Stock</label>
-            <input type="number" id="countInStock" name="countInStock" required>
-        </div>
-        <div class="form-group">
-            <label for="imageUrl">Image URL</label>
-            <input type="text" id="imageUrl" name="imageUrl">
-        </div>
-        <div class="form-group">
-            <input type="checkbox" id="isFeatured" name="isFeatured">
-            <label for="isFeatured">Featured</label>
-        </div>
-        <div class="form-group">
-            <input type="checkbox" id="isTrending" name="isTrending">
-            <label for="isTrending">Trending</label>
-        </div>
-        <button type="submit">Add Product</button>
-    </form>
-</div>
+        <h2>Add New Product</h2>
+        <form action="{{ url_for('admin.add_product') }}" method="POST">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="price">Price</label>
+                <input type="number" id="price" name="price" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="countInStock">Stock</label>
+                <input type="number" id="countInStock" name="countInStock" required>
+            </div>
+            <div class="form-group">
+                <label for="imageUrl">Image URL</label>
+                <input type="text" id="imageUrl" name="imageUrl">
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="isFeatured" name="isFeatured">
+                <label for="isFeatured">Featured</label>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="isTrending" name="isTrending">
+                <label for="isTrending">Trending</label>
+            </div>
+            <button type="submit">Add Product</button>
+        </form>
+    </main>
+
+    <!-- Include Admin Footer -->
+    {% include "layouts/admin_footer.html" %}
 </body>
+
 </html>

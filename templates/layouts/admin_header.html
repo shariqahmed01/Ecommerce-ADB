@@ -1,0 +1,52 @@
+<header>
+    <style>
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between; /* Ensures space between logo and links */
+            align-items: center;
+        }
+
+        .brand-logo img {
+            max-height: 50px;
+        }
+
+        .header-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .header-links a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .header-links a:hover {
+            color: #4CAF50;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+    </style>
+    <div class="header-container">
+        <!-- Brand Logo -->
+        <div class="brand-logo">
+            <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="Brand Logo">
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="header-links">
+            <a href="/admin/dashboard">Home</a>
+            <a href="/auth/logout">Logout</a>
+        </div>
+    </div>
+</header>
