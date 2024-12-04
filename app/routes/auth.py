@@ -1,7 +1,11 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify, session
+
+from app.models.admin import Admin
 from app.models.customer import Customer
 from services.auth_service import register_user, login_user
 import bcrypt
+
+from utils.bcrypt_helper import check_password
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -58,15 +62,24 @@ def login():
             flash("Input exceeds maximum length.", "danger")
             return render_template('auth/login.html')
 
-        # Attempt login
-        response = login_user(login_data)
+        # Check if the login is for admin
+        admin = Admin.get_admin_by_username(login_data['email'])
+        if admin and login_data['password']=="admin":
+            # Admin login
+            session['admin_id'] = str(admin['_id'])
+            session['is_admin'] = True
+            flash("Welcome, Admin!", "success")
+            return redirect(url_for('admin.dashboard'))
 
+        # Attempt customer login
+        response = login_user(login_data)
         if response["success"]:
             # Store customer data in session
             customer = Customer.get_customer_by_email(login_data['email'])
             session['customer_id'] = str(customer['_id'])
             session['customer_name'] = customer['username']
             session['customer_email'] = customer['email']
+            session['is_admin'] = False
 
             flash(response["message"], "success")
             return redirect(url_for('home.index'))
@@ -74,6 +87,7 @@ def login():
             flash(response["message"], "danger")
 
     return render_template('auth/login.html')
+
 
 @auth_bp.route('/logout', methods=['GET'])
 def logout():

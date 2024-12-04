@@ -27,3 +27,29 @@ class Order:
         except Exception:
             return None
         return mongo.db.Order.update_one({"_id": order_id}, {"$set": {"status": status}})
+
+    @staticmethod
+    def get_all_orders():
+        """Fetch all orders."""
+        orders = mongo.db.Order.find()
+        return [
+            {**order, "_id": str(order["_id"])} for order in orders
+        ]
+
+    @staticmethod
+    def get_order_by_id(order_id):
+        """Fetch a single order by its ID."""
+        try:
+            order_id = ObjectId(order_id)
+        except Exception:
+            return None
+        return mongo.db.Order.find_one({"_id": order_id})
+
+    @staticmethod
+    def update_order_status(order_id, status):
+        """Update the status of an order."""
+        try:
+            order_id = ObjectId(order_id)
+        except Exception:
+            return None
+        return mongo.db.Order.update_one({"_id": order_id}, {"$set": {"status": status}})
