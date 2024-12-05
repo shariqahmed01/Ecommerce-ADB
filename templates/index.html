@@ -100,78 +100,33 @@
             </div>
             <div class="header-content">
                 <p class="heading-1">Fashion Collection 2024</p>
-                <h1>Welcome to Brand<span class="logo-style">y</span> Unique Store</h1>
-                <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
+                <h1>Welcome to Shopease Unique Store</h1>
+                <p>At Shopease, we believe fashion is more than just clothing—it's a way to express your individuality and embrace your uniqueness. Our carefully curated collections are designed to cater to every style, from timeless classics to trendsetting designs that define the season.</p>
                 <a class="button" href="/products">Shop Now</a>
             </div>
         </header>
-
-        <section id="summer-collection">
-            <div class="container">
-                <div class="sc-content">
-                    <h1>Summer Collection</h1>
-                    <p class="description">Lorem Ipsum is simply dummy text of the printing and typesetting industry. It has been the industry's standard dummy text since the 1500s.</p>
-                    <a href="#">Discover Now</a>
-                </div>
-                <div class="sc-media">
-                    <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412556/E-commerce%20landing%20page/summer-collection/cold-fashion-man-women_3x.jpg" alt="sc-image">
-                </div>
-            </div>
-        </section>
-
-        <section id="products">
+<section id="products">
             <div class="container">
                 <div class="products-header">
-                    <h2>Popular Products</h2>
-                    <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
+                    <h2>Trending Products</h2>
+                    <p>Step into the spotlight with our Trending Products, featuring the latest and most coveted styles of the season</p>
+                    <P><b>Shop the trends and redefine your style today!</b></P>
                 </div>
-                <div class="product product-1">
-                    <figure>
-                        <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412551/E-commerce%20landing%20page/products-showcase/product-1-img_3x.jpg" alt="product-image">
-                        <figcaption>Cold Fashion</figcaption>
-                        <figcaption>$ 56.00</figcaption>
-                    </figure>
-                </div>
-                <div class="product product-2">
-                    <figure>
-                        <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412546/E-commerce%20landing%20page/products-showcase/product-2-img_3x.jpg" alt="product-image">
-                        <figcaption>Women Fashion</figcaption>
-                        <figcaption>$ 84.00</figcaption>
-                    </figure>
-                </div>
-                <div class="product product-3">
-                    <figure>
-                        <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412550/E-commerce%20landing%20page/products-showcase/product-3-img_3x.jpg" alt="product-image">
-                        <figcaption>Women Fashion</figcaption>
-                        <figcaption>$ 48.00</figcaption>
-                    </figure>
-                </div>
-                <div class="product product-4">
-                    <figure>
-                        <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412550/E-commerce%20landing%20page/products-showcase/product-4-img_3x.jpg" alt="product-image">
-                        <figcaption>Men Fashion</figcaption>
-                        <figcaption>$ 89.00</figcaption>
-                    </figure>
-                </div>
-            </div>
-        </section>
-
-        <section id="blog">
-            <div class="container">
-                <div class="blog-header">
-                    <h2>Latest from Blog</h2>
-                    <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
-                </div>
-                <div class="blog-content">
-                    <div class="blog-1">
-                        <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412548/E-commerce%20landing%20page/blog/blog-2-img_3x.jpg" alt="image">
-                        <div class="blog-1-content">
-                            <h4>Lorem Ipsum</h4>
-                            <h3>Lorem ipsum dolor sit amet.</h3>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                            <p class="button">View Post</p>
-                        </div>
+                <div class="products-grid">
+                    {% for product in trending_products %}
+                    <div class="product">
+                        <a href="{{ url_for('product.product_details', product_id=product.id) }}">
+                            <figure>
+                                <img src="{{ product.imageUrls[0] if product.imageUrls else url_for('static', filename='images/default-product.jpg') }}"
+                                     alt="{{ product.name }}">
+                                <figcaption>{{ product.name }}</figcaption>
+                                <figcaption>${{ product.price }}</figcaption>
+                            </figure>
+                        </a>
                     </div>
+                    {% else %}
+                    <p>No trending products available at the moment.</p>
+                    {% endfor %}
                 </div>
             </div>
         </section>
