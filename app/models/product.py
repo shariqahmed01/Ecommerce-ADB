@@ -51,4 +51,36 @@ class Product:
             {**product, "_id": str(product["_id"])} for product in products
         ]
 
+    @staticmethod
+    def get_product_by_id(product_id):
+        """Fetch a product by its ID."""
+        try:
+            product_id = ObjectId(product_id)
+        except Exception:
+            return None
+        return mongo.db.Product.find_one({"_id": product_id})
+
+    @staticmethod
+    def add_review(review_data):
+        """Add a review to a product."""
+        product_id = review_data.get("productId")
+        if not product_id:
+            raise ValueError("Product ID is required to add a review.")
+
+        try:
+            product_id = ObjectId(product_id)
+        except Exception as e:
+            raise ValueError(f"Invalid Product ID: {e}")
+
+        review = {
+            "customerId": review_data.get("customerId"),
+            "rating": review_data.get("rating"),
+            "comment": review_data.get("comment"),
+            "reviewDate": review_data.get("reviewDate"),
+        }
+
+        return mongo.db.Product.update_one(
+            {"_id": product_id},
+            {"$push": {"reviews": review}}
+        )
 

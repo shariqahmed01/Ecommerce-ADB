@@ -40,6 +40,10 @@
             margin: 0;
         }
 
+        header ul li {
+            position: relative;
+        }
+
         header ul li a {
             color: white;
             text-decoration: none;
@@ -52,10 +56,33 @@
             color: #4CAF50;
         }
 
-        header .nav-icon img {
-            width: 30px;
-            height: auto;
-            cursor: pointer;
+        header ul li .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #444;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 999;
+            min-width: 150px;
+        }
+
+        header ul li:hover .dropdown-menu {
+            display: block;
+        }
+
+        header ul li .dropdown-menu a {
+            display: block;
+            padding: 0.8rem 1rem;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
+        }
+
+        header ul li .dropdown-menu a:hover {
+            background-color: #4CAF50;
         }
 
         @media (max-width: 768px) {
@@ -103,7 +130,14 @@
                 <li><a href="/cart/view">Cart</a></li>
                 <li><a href="/contact">Contact</a></li>
                 {% if session.get('customer_name') %}
-                <li><a href="/auth/logout">Logout ({{ session.get('customer_name') }})</a></li>
+                <li>
+                    <a href="#">Welcome, {{ session.get('customer_name') }}</a>
+                    <div class="dropdown-menu">
+                        <a href="/profile/">Profile</a>
+                        <a href="/orders/view">Order History</a>
+                        <a href="/auth/logout">Logout</a>
+                    </div>
+                </li>
                 {% else %}
                 <li><a href="/auth/login">Login</a></li>
                 {% endif %}

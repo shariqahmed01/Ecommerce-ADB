@@ -53,3 +53,18 @@ class Order:
         except Exception:
             return None
         return mongo.db.Order.update_one({"_id": order_id}, {"$set": {"status": status}})
+
+    @staticmethod
+    def get_orders_by_customer_id(customer_id):
+        """Fetch orders by customer ID."""
+        try:
+            customer_id = ObjectId(customer_id)
+        except Exception:
+            print("Invalid customer ID format.")
+            return []
+
+        orders = list(mongo.db.Order.find({"customerId": customer_id}))
+        if not orders:
+            print(f"No orders found for customer ID: {customer_id}")
+        return orders
+
