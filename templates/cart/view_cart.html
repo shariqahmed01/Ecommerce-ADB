@@ -108,141 +108,119 @@
 </head>
 
 <body>
-<!-- Include Header -->
-{% include "layouts/header.html" %}
+    <!-- Include Header -->
+    {% include "layouts/header.html" %}
 
-<!-- Main Content -->
-<main>
-    <div class="container">
-        <h1>Your Cart</h1>
-        {% if cart and cart|length > 0 %}
-            <table>
-                <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Image</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for item in cart %}
-                    <tr data-product-id="{{ item.product_id }}" data-variant-id="{{ item.variant_id }}">
-                        <td>
-                            {{ item.name }} <br>
-                            <small>
-                                {% if item.variant_details %}
-                                    {{ item.variant_details.size }} | {{ item.variant_details.color }} |
-                                    {{ item.variant_details.material }}
-                                {% else %}
-                                    Variant details not available
-                                {% endif %}
-                            </small>
-                        </td>
-
-                        <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}"
-                                 alt="{{ item.name }}"></td>
-                        <td>${{ item.price }}</td>
-                        <td>${{ item.total }}</td>
-                        <td>
-                            <select class="quantity-select"
-                                    onchange="updateCartQuantity('{{ item.product_id }}', '{{ item.variant_id }}', this.value)">
-                                {% for i in range(1, 21) %}
-                                    <option value="{{ i }}"
-                                            {% if i == item.quantity %}selected{% endif %}>{{ i }}</option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                        <td>${{ item.price * item.quantity }}</td>
-                        <td>
-                            <button onclick="removeFromCart('{{ item.product_id }}', '{{ item.variant_id }}')">Remove
-                            </button>
-                        </td>
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <h1>Your Cart</h1>
+            {% if cart and cart|length > 0 %}
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Image</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
                     </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in cart %}
+                        <tr data-product-id="{{ item.product_id }}" data-variant-id="{{ item.variant_id }}">
+                            <td>
+                                {{ item.name }} <br>
+                                <small>
+                                    {% if item.variant_details %}
+                                        {{ item.variant_details.size }} | {{ item.variant_details.color }} |
+                                        {{ item.variant_details.material }}
+                                    {% else %}
+                                        Variant details not available
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}" alt="{{ item.name }}"></td>
+                            <td>${{ item.price }}</td>
+                            <td>
+                                <select class="quantity-select"
+                                        onchange="updateCartQuantity('{{ item.product_id }}', '{{ item.variant_id }}', this.value)">
+                                    {% for i in range(1, 21) %}
+                                        <option value="{{ i }}" {% if i == item.quantity %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>${{ item.price * item.quantity }}</td>
+                            <td>
+                                <button onclick="removeFromCart('{{ item.product_id }}', '{{ item.variant_id }}')">Remove</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
 
-                {% endfor %}
-                </tbody>
-            </table>
+                <!-- Totals Section -->
+                <div class="totals">
+                    <p>Subtotal: ${{ subtotal }}</p>
+                    <p>Tax (10%): ${{ tax }}</p>
+                    <p>Shipping: ${{ shipping }}</p>
+                    <p class="grand-total">Grand Total: ${{ grand_total }}</p>
+                </div>
 
-            <!-- Totals Section -->
-            <div class="totals">
-                <p>Subtotal: ${{ subtotal }}</p>
-                <p>Tax (10%): ${{ tax }}</p>
-                <p>Shipping: ${{ shipping }}</p>
-                <p class="grand-total">Grand Total: ${{ grand_total }}</p>
-            </div>
+                <!-- Cart Actions -->
+                <div class="cart-actions">
+                    <button onclick="window.location.href='/products'">Continue Shopping</button>
+                    <button onclick="window.location.href='/checkout'">Checkout</button>
+                </div>
+            {% else %}
+                <div class="empty-cart">
+                    <p>Your cart is empty. <a href="/products">Start shopping</a>.</p>
+                </div>
+            {% endif %}
+        </div>
+    </main>
 
-            <!-- Cart Actions -->
-            <div class="cart-actions">
-                <button onclick="window.location.href='/products'">Continue Shopping</button>
-                <button onclick="window.location.href='/checkout'">Checkout</button>
-            </div>
-        {% else %}
-            <div class="empty-cart">
-                <p>Your cart is empty. <a href="/products">Start shopping</a>.</p>
-            </div>
-        {% endif %}
-    </div>
-</main>
+    <!-- Include Footer -->
+    {% include "layouts/footer.html" %}
 
-<!-- Include Footer -->
-{% include "layouts/footer.html" %}
-
-<!-- Scripts -->
-<script>
-    function updateCartQuantity(productId, variantId, quantity) {
-    fetch('/cart/update', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10)})
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update the item's total
-                const row = document.querySelector(`tr[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
-                if (row) {
-                    row.querySelector('td:nth-child(6)').textContent = `$${data.item_total.toFixed(2)}`;
+    <!-- Scripts -->
+    <script>
+        function updateCartQuantity(productId, variantId, quantity) {
+            fetch('/cart/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to update item quantity.');
                 }
-
-                // Update cart totals
-                document.querySelector('.totals p:nth-child(1)').textContent = `Subtotal: $${data.subtotal.toFixed(2)}`;
-                document.querySelector('.totals p:nth-child(2)').textContent = `Tax (10%): $${data.tax.toFixed(2)}`;
-                document.querySelector('.totals p:nth-child(3)').textContent = `Shipping: $${data.shipping.toFixed(2)}`;
-                document.querySelector('.totals .grand-total').textContent = `Grand Total: $${data.grand_total.toFixed(2)}`;
-            } else {
-                alert(data.message || 'Failed to update item quantity.');
-            }
-        })
-        .catch(error => console.error('Error:', error));
-}
-
-
-   function removeFromCart(productId, variantId) {
-    console.log('Attempting to remove:', { productId, variantId }); // Debug log
-
-    fetch('/cart/remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, variant_id: variantId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Remove response:', data); // Debug log
-        if (data.success) {
-            alert(data.message);
-            location.reload(); // Reload the page on success
-        } else {
-            alert(data.message || 'Failed to remove item.');
+            })
+            .catch(error => console.error('Error:', error));
         }
-    })
-    .catch(error => console.error('Error:', error));
-}
 
-
-</script>
+        function removeFromCart(productId, variantId) {
+            fetch('/cart/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId, variant_id: variantId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to remove item.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
 
 </html>

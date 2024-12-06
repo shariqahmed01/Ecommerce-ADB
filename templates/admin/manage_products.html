@@ -92,8 +92,8 @@
                 <tr>
                     <th>Name</th>
                     <th>Description</th>
-                    <th>Price</th>
-                    <th>Stock</th>
+                    <!--<th>Price</th>
+                    <th>Stock</th> -->
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -102,12 +102,12 @@
                 <tr>
                     <td>{{ product['name'] }}</td>
                     <td>{{ product['description'] }}</td>
-                    <td>${{ product['price'] }}</td>
-                    <td>{{ product['countInStock'] }}</td>
+                   <!-- <td>${{ product['price'] }}</td>
+                    <td>{{ product['countInStock'] }}</td> -->
                     <td class="action-buttons">
                         <!-- Edit Button -->
-                        <form action="{{ url_for('admin.edit_product', product_id=product['_id']) }}" method="POST" style="display:inline;">
-                            <button type="submit">Edit</button>
+                       <!-- <form action="{{ url_for('admin.edit_product', product_id=product['_id']) }}" method="POST" style="display:inline;">
+                            <button type="submit">Edit</button> -->
                         </form>
                         <!-- Delete Button -->
                         <form action="{{ url_for('admin.remove_product', product_id=product['_id']) }}" method="POST" style="display:inline;">

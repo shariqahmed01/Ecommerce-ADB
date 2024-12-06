@@ -73,6 +73,23 @@
         button:hover {
             background-color: #45a049;
         }
+
+        .flash-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .flash-message.success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .flash-message.error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
     </style>
 </head>
 
@@ -84,6 +101,16 @@
     <main>
         <div class="container">
             <h1>Contact Us</h1>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
             <form action="{{ url_for('contact.submit_contact') }}" method="POST">
                 <label for="name">Your Name</label>
                 <input type="text" id="name" name="name" placeholder="Enter your name" required>

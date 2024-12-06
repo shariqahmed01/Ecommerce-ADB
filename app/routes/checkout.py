@@ -71,6 +71,7 @@ def checkout():
 
 @checkout_bp.route('/process_payment', methods=['POST'])
 def process_payment():
+    """Process payment and create an order."""
     address = request.form.get('address')
     contact = request.form.get('contact')
     payment_method = request.form.get('payment_method')
@@ -87,25 +88,52 @@ def process_payment():
         return redirect(url_for('cart.view_cart_page'))
 
     total_amount = 0
-    for item in cart:
-        product = Product.get_product_by_id(item.get('productId'))
-        variant = ProductVariant.get_variant_by_id(item.get('variantId'))
-        if product and variant:
-            total_amount += item['quantity'] * variant['price']
+    processed_cart = []  # Prepare cart items with details for the order
 
+    for item in cart:
+        product_id = item.get('productId') or item.get('product_id')
+        variant_id = item.get('variantId') or item.get('variant_id')
+        quantity = item.get('quantity', 0)
+
+        if not product_id or not variant_id:
+            continue
+
+        product = Product.get_product_by_id(product_id)
+        variant = ProductVariant.get_variant_by_id(variant_id)
+
+        if product and variant:
+            item_total = variant['price'] * quantity
+            total_amount += item_total
+            processed_cart.append({
+                "product_id": str(product_id),
+                "variant_id": str(variant_id),
+                "quantity": quantity,
+                "price": variant['price'],  # Include price to avoid recalculating later
+                "total": round(item_total, 2)
+            })
+
+    if not processed_cart:
+        flash("Unable to process your cart. Please check the items.", "danger")
+        return redirect(url_for('cart.view_cart_page'))
+
+    # Prepare order data
     order_data = {
         "customerId": ObjectId(customer_id),
         "orderDate": datetime.utcnow(),
-        "items": cart,
-        "totalAmount": total_amount,
+        "items": processed_cart,
+        "totalAmount": round(total_amount, 2),
         "status": "pending",
         "shippingAddress": address,
         "contact": contact,
         "paymentMethod": payment_method
     }
 
+    # Insert order into the database
     order_id = Order.create_order(order_data)
+
+    # Clear customer's cart
     Customer.update_customer_cart(customer['_id'], [])
+
     flash(f"Payment successful! Order #{str(order_id)} is being processed.", "success")
     return redirect(url_for('home.index'))
 

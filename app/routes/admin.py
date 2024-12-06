@@ -97,3 +97,18 @@ def update_order_status(order_id):
     flash("Order status updated successfully!", "success")
     return redirect(url_for('admin.manage_orders'))
 
+@admin_bp.route('/orders', methods=['GET'])
+def manage_orders():
+    """Admin view for managing orders."""
+    # Fetch all orders from the database
+    orders = Order.get_all_orders()
+
+    # Enrich orders with customer usernames
+    for order in orders:
+        customer = Customer.get_customer_by_id(order['customerId'])
+        order['customerName'] = customer.get('username', 'Unknown Customer') if customer else 'Unknown Customer'
+
+    return render_template('admin/manage_orders.html', orders=orders)
+
+
+

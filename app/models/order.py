@@ -1,3 +1,5 @@
+from flask import url_for
+
 from . import mongo
 from bson.objectid import ObjectId
 from datetime import datetime
@@ -56,7 +58,7 @@ class Order:
 
     @staticmethod
     def get_orders_by_customer_id(customer_id):
-        """Fetch orders by customer ID."""
+        """Fetch orders by customer ID with product details."""
         try:
             customer_id = ObjectId(customer_id)
         except Exception:
@@ -64,7 +66,22 @@ class Order:
             return []
 
         orders = list(mongo.db.Order.find({"customerId": customer_id}))
-        if not orders:
-            print(f"No orders found for customer ID: {customer_id}")
-        return orders
+
+        # Enrich items with product details
+        for order in orders:
+            for item in order["items"]:
+                product = mongo.db.Product.find_one({"_id": ObjectId(item["product_id"])})
+                if product:
+                    item["image"] = product["imageUrls"][0] if product.get("imageUrls") else url_for('static',filename='images/default-product.jpg')
+                    item["name"] = product["name"]
+
+        return [
+            {
+                **order,
+                "_id": str(order["_id"]),
+                "items": order["items"],
+            }
+            for order in orders
+        ]
+
 

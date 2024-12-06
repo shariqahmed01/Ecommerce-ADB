@@ -91,7 +91,6 @@ def view_orders():
 
 
 
-
 @order_bp.route('/review/<product_id>', methods=['POST'])
 def submit_review(product_id):
     """Submit a review for a delivered product."""
