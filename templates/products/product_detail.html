@@ -118,95 +118,122 @@
 </head>
 
 <body>
-    <!-- Include Header -->
-    {% include "layouts/header.html" %}
+<!-- Include Header -->
+{% include "layouts/header.html" %}
 
-    <!-- Main Content -->
-    <main>
-        <div class="product-details-container">
-            <div class="product-image">
-                <img src="{{ product['imageUrls'][0] if product.get('imageUrls') else url_for('static', filename='images/default-product.jpg') }}" alt="{{ product['name'] }}">
-            </div>
-            <div class="product-details">
-                <h2>{{ product['name'] }}</h2>
-                <p><strong>Price:</strong> ${{ product['price'] }}</p>
-                <p><strong>Description:</strong> {{ product['description'] }}</p>
-                <p><strong>Material:</strong> {{ product.get('material', 'N/A') }}</p>
-                <p><strong>Stock Availability:</strong>
-                    {% if product['countInStock'] > 0 %}
-                    In Stock (<span id="stock">{{ product['countInStock'] }}</span> left)
-                    {% else %}
-                    Out of Stock
-                    {% endif %}
-                </p>
-                <section class="cart-section">
-                    {% if product['countInStock'] > 0 %}
+<!-- Main Content -->
+<main>
+    <div class="product-details-container">
+        <div class="product-image">
+            <img src="{{ product['imageUrls'][0] if product.get('imageUrls') else url_for('static', filename='images/default-product.jpg') }}"
+                 alt="{{ product['name'] }}">
+        </div>
+        <div class="product-details">
+            <h2>{{ product['name'] }}</h2>
+{#            <p><strong>Price:</strong> ${{ variant['price'] }}</p>#}
+          <p><strong>Choose a Variant:</strong></p>
+<select id="variant" name="variant" onchange="updateVariantDetails()">
+    {% for variant in product['variants'] %}
+        <option value="{{ variant['_id'] }}" {% if variant['_id'] == product['defaultVariant']['_id'] %}selected{% endif %}>
+            {{ variant['size'] }} - {{ variant['color'] }} (${{ variant['price'] }})
+        </option>
+    {% endfor %}
+</select>
+
+
+            <p><strong>Price:</strong> $<span id="price">{{ product['defaultVariant']['price'] }}</span></p>
+<p><strong>Stock Availability:</strong>
+    {% if product['defaultVariant']['stockQuantity'] > 0 %}
+        In Stock (<span id="stock">{{ product['defaultVariant']['stockQuantity'] }}</span> left)
+    {% else %}
+        Out of Stock
+    {% endif %}
+</p>
+
+
+
+            <section class="cart-section">
+                {% if variant['stockQuantity'] > 0 %}
                     <form id="addToCartForm">
                         <label for="quantity"><strong>Quantity:</strong></label>
-                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product['countInStock'] }}">
-
-                        {% if product.get('variants') %}
-                        <label for="variant"><strong>Choose a Variant:</strong></label>
-                        <select id="variant" name="variant">
-                            {% for variant in product['variants'] %}
-                            <option value="{{ variant['id'] }}">{{ variant['size'] }} - {{ variant['color'] }}</option>
-                            {% endfor %}
-                        </select>
-                        {% endif %}
+                        <input type="number" id="quantity" name="quantity" value="1" min="1"
+                               max="{{ variant['stockQuantity'] }}">
                         <button type="button" onclick="addToCart()">Add to Cart</button>
                     </form>
-                    {% else %}
+                {% else %}
                     <p>Sorry, this product is currently out of stock.</p>
-                    {% endif %}
-                </section>
-            </div>
-        </div>
+                {% endif %}
+            </section>
 
-        <!-- Reviews Section -->
-        <div class="reviews-section">
-            <h2>Customer Reviews</h2>
-            {% if reviews %}
+
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="reviews-section">
+        <h2>Customer Reviews</h2>
+        {% if reviews %}
             {% for review in reviews %}
-            <div class="review">
-                <strong>{{ review['user'] }}:</strong>
-                <p>Rating: {{ review['rating'] }}/5</p>
-                <p>{{ review['comment'] }}</p>
-            </div>
+                <div class="review">
+                    <strong>{{ review['user'] }}:</strong>
+                    <p>Rating: {{ review['rating'] }}/5</p>
+                    <p>{{ review['comment'] }}</p>
+                </div>
             {% endfor %}
-            {% else %}
+        {% else %}
             <p>No reviews yet. Be the first to review this product!</p>
-            {% endif %}
-        </div>
-    </main>
+        {% endif %}
+    </div>
+</main>
 
-    <!-- Include Footer -->
-    {% include "layouts/footer.html" %}
+<!-- Include Footer -->
+{% include "layouts/footer.html" %}
 
-    <script>
-        function addToCart() {
-            const productId = "{{ product['_id'] }}"; // Explicitly use product ID as a string
-            const quantity = document.getElementById('quantity').value;
-            const variant = document.getElementById('variant') ? document.getElementById('variant').value : null;
+<script>
+    function addToCart() {
+    const productId = "{{ product['_id'] }}";
+    const variantId = document.getElementById('variant').value;
+    const quantity = document.getElementById('quantity').value;
 
-            fetch('/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity), variant_id: variant })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-                if (data.success) {
-                    const stockElement = document.getElementById('stock');
-                    const currentStock = parseInt(stockElement.textContent);
-                    stockElement.textContent = currentStock - quantity;
-                }
-            })
-            .catch(error => console.error('Error:', error));
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            variant_id: variantId,
+            quantity: parseInt(quantity, 10)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+    const variants = JSON.parse('{{ product["variants"] | tojson | safe }}');
+
+    function updateVariantDetails() {
+        const selectedVariantId = document.getElementById('variant').value;
+        const selectedVariant = variants.find(variant => variant._id === selectedVariantId);
+
+        // Update price and stock details
+        document.getElementById('price').textContent = selectedVariant.price;
+        document.getElementById('stock').textContent = selectedVariant.stockQuantity;
+
+        // Handle stock availability
+        const stockAvailability = document.getElementById('stock');
+        if (selectedVariant.stockQuantity > 0) {
+            stockAvailability.parentElement.textContent = `In Stock (${selectedVariant.stockQuantity} left)`;
+        } else {
+            stockAvailability.parentElement.textContent = 'Out of Stock';
         }
-    </script>
+    }
+
+</script>
 </body>
 
 </html>

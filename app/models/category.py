@@ -1,3 +1,5 @@
+from bson import ObjectId
+
 from . import mongo
 
 class Category:
@@ -6,14 +8,23 @@ class Category:
         return list(mongo.db.Category.find())
 
     @staticmethod
-    def create_category(category_data):
-        return mongo.db.Category.insert_one(category_data)
+    def get_category_by_id(category_id):
+        try:
+            category_id = ObjectId(category_id)
+        except Exception:
+            return None
+        return mongo.db.Category.find_one({"_id": category_id})
 
 
 class Subcategory:
     @staticmethod
     def get_subcategories_by_category(category_id):
+        try:
+            category_id = ObjectId(category_id)
+        except Exception:
+            return []
         return list(mongo.db.Subcategory.find({"categoryId": category_id}))
+
 
     @staticmethod
     def create_subcategory(subcategory_data):

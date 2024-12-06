@@ -1,6 +1,6 @@
 from datetime import datetime
 from bson.objectid import ObjectId
-from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash
 from app.models.product import Product
 from app.models.customer import Customer
 from app.models.order import Order  # Assuming you have an Order model
@@ -11,61 +11,88 @@ checkout_bp = Blueprint('checkout', __name__, url_prefix='/checkout')
 
 @checkout_bp.route('/', methods=['GET'])
 def checkout():
+    """Display the checkout page."""
     customer_id = session.get('customer_id')
-
     if not customer_id:
+        flash("Please log in to proceed to checkout.", "danger")
         return redirect(url_for('auth.login'))
 
     customer = Customer.get_customer_by_id(customer_id)
     if not customer:
+        flash("Customer not found.", "danger")
         return redirect(url_for('auth.login'))
 
     cart = customer.get('cart', [])
-    subtotal = sum(item['quantity'] * Product.get_product_by_id(item['productId'])['price'] for item in cart)
+    cart_details = []
+    subtotal = 0
+
+    for item in cart:
+        product_id = item.get('productId') or item.get('product_id')
+        variant_id = item.get('variantId') or item.get('variant_id')
+
+        # Ensure both product and variant IDs exist
+        if not product_id or not variant_id:
+            continue
+
+        product = Product.get_product_by_id(product_id)
+        variant = ProductVariant.get_variant_by_id(variant_id)
+
+        if product and variant:
+            item_total = variant['price'] * item['quantity']
+            subtotal += item_total
+            cart_details.append({
+                "name": product['name'],
+                "image": product['imageUrls'][0] if product.get('imageUrls') else None,
+                "price": variant['price'],
+                "quantity": item['quantity'],
+                "variant_details": {
+                    "size": variant['size'],
+                    "color": variant['color'],
+                    "material": variant['material']
+                },
+                "total": round(item_total, 2)
+            })
+
+    # Calculate totals
     tax = round(subtotal * 0.1, 2)  # 10% tax
     shipping = 5.0  # Fixed shipping charge
     grand_total = round(subtotal + tax + shipping, 2)
 
-    cart_details = []
-    for item in cart:
-        product = Product.get_product_by_id(item['productId'])
-        if product:
-            cart_details.append({
-                "name": product['name'],
-                "price": product['price'],
-                "quantity": item['quantity'],
-                "total": round(product['price'] * item['quantity'], 2)
-            })
-
     return render_template(
         'checkout/checkout.html',
         cart=cart_details,
-        subtotal=subtotal,
+        subtotal=round(subtotal, 2),
         tax=tax,
         shipping=shipping,
         grand_total=grand_total
     )
 
 
+
 @checkout_bp.route('/process_payment', methods=['POST'])
 def process_payment():
-    if session.get('order_placed', False):
-        return jsonify({"message": "Order already placed.", "success": False}), 400
-
     address = request.form.get('address')
     contact = request.form.get('contact')
     payment_method = request.form.get('payment_method')
 
     customer_id = session.get('customer_id')
     customer = Customer.get_customer_by_id(customer_id)
-
     if not customer:
-        return jsonify({"message": "Customer not found.", "success": False}), 400
+        flash("Please log in to complete the checkout.", "danger")
+        return redirect(url_for('auth.login'))
 
     cart = customer.get('cart', [])
-    total_amount = sum(item['quantity'] * Product.get_product_by_id(item['productId'])['price'] for item in cart)
+    if not cart:
+        flash("Your cart is empty.", "warning")
+        return redirect(url_for('cart.view_cart_page'))
 
-    # Create the order
+    total_amount = 0
+    for item in cart:
+        product = Product.get_product_by_id(item.get('productId'))
+        variant = ProductVariant.get_variant_by_id(item.get('variantId'))
+        if product and variant:
+            total_amount += item['quantity'] * variant['price']
+
     order_data = {
         "customerId": ObjectId(customer_id),
         "orderDate": datetime.utcnow(),
@@ -78,13 +105,13 @@ def process_payment():
     }
 
     order_id = Order.create_order(order_data)
-
-    session['order_placed'] = True
     Customer.update_customer_cart(customer['_id'], [])
+    flash(f"Payment successful! Order #{str(order_id)} is being processed.", "success")
+    return redirect(url_for('home.index'))
 
-    return jsonify({
-        "message": "Payment successful. Order is being processed.",
-        "order_id": str(order_id),
-        "success": True
-    })
+
+@checkout_bp.route('/success/<order_id>', methods=['GET'])
+def success_page(order_id):
+    """Display the success page after payment."""
+    return render_template('checkout/success.html', order_id=order_id)
 

@@ -253,4 +253,11 @@
             cardDetails.style.display = 'none';
         }
     });
+
+    const flashMessages = JSON.parse('{{ get_flashed_messages(with_categories=True) | tojson | safe }}');
+
+    flashMessages.forEach(([category, message]) => {
+        alert(message); // Replace with a custom modal or toast notification for better styling
+    });
+
 </script>

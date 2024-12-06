@@ -22,7 +22,7 @@
         }
 
         main {
-            flex: 1; /* Pushes the footer to the bottom */
+            flex: 1;
         }
 
         /* Product List Styling */
@@ -30,6 +30,27 @@
             max-width: 1200px;
             margin: 2rem auto;
             padding: 1rem;
+        }
+
+        .filters-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filters-bar select, .filters-bar input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 300px;
         }
 
         .products-grid {
@@ -77,35 +98,69 @@
 </head>
 
 <body>
-    <!-- Include Header -->
-    {% include "layouts/header.html" %}
+<!-- Include Header -->
+{% include "layouts/header.html" %}
 
-    <!-- Main Content -->
-    <main>
-        <div class="product-list-container">
-            <h1>Our Products</h1>
-            <p>Browse through our collection of amazing products.</p>
-            <div class="products-grid">
-                {% for product in products %}
+<!-- Main Content -->
+<main>
+    <div class="product-list-container">
+        <h1>Our Products</h1>
+        <p>Browse through our collection of amazing products.</p>
+
+        <!-- Filters and Search Bar -->
+        <form method="GET" action="{{ url_for('product.product_list') }}">
+            <select name="categoryId">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category['_id'] }}"
+                            {% if request.args.get('categoryId') == category['_id'] %}selected{% endif %}>{{ category['name'] }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="subcategoryId">
+                <option value="">All Subcategories</option>
+                {% for subcategory in subcategories %}
+                    <option value="{{ subcategory['_id'] }}">{{ subcategory['name'] }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="text" name="size" placeholder="Size">
+            <input type="text" name="color" placeholder="Color">
+            <input type="text" name="material" placeholder="Material">
+            <input type="number" name="minPrice" placeholder="Min Price">
+            <input type="number" name="maxPrice" placeholder="Max Price">
+            <button type="submit">Filter</button>
+        </form>
+
+        <!-- Product Grid -->
+        <div class="products-grid">
+            {% for product in products %}
                 <div class="product">
                     <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">
+
                         <figure>
-                            <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}" alt="{{ product.get('name', 'Unnamed Product') }}">
+                            <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}"
+                                 alt="{{ product.get('name', 'Unnamed Product') }}">
                             <figcaption>{{ product['name'] or 'Unnamed Product' }}</figcaption>
-                            <figcaption>${{ product['price'] if product.get('price') else 'N/A' }}</figcaption>
+                            <figcaption>
+    Price: From ${{ product['variants'][0]['price'] if product['variants'] else 'N/A' }}
+</figcaption>
+
+
+
                         </figure>
                     </a>
                 </div>
-                {% else %}
+            {% else %}
                 <!-- No Products Available -->
-                <p>No products available at the moment.</p>
-                {% endfor %}
-            </div>
+                <p>No products available for the selected filters.</p>
+            {% endfor %}
         </div>
-    </main>
+    </div>
+</main>
 
-    <!-- Include Footer -->
-    {% include "layouts/footer.html" %}
+<!-- Include Footer -->
+{% include "layouts/footer.html" %}
 </body>
 
 </html>

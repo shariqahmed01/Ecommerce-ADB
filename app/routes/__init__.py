@@ -5,6 +5,7 @@ from .contact import contact_bp
 from .product import product_bp
 from .cart import cart_bp
 from .order import order_bp
+from .profile import profile_bp
 from .review import review_bp
 from .delivery import delivery_bp
 from .admin import admin_bp
@@ -15,6 +16,7 @@ def register_blueprints(app):
     app.register_blueprint(home_bp)  # Register the home blueprint
     app.register_blueprint(auth_bp)
     app.register_blueprint(product_bp)
+    app.register_blueprint(profile_bp)
     app.register_blueprint(cart_bp)
     app.register_blueprint(order_bp)
     app.register_blueprint(review_bp)
