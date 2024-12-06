@@ -124,15 +124,37 @@ class Product:
 
     @staticmethod
     def get_filtered_products(filters, variant_filters):
-        """Fetch products and optionally filter by variants."""
+        """Fetch products filtered by attributes and variants."""
         products = list(mongo.db.Product.find(filters))
+
         for product in products:
             product["_id"] = str(product["_id"])
-            # Attach variants filtered by variant_filters
-            variants = list(mongo.db.ProductVariant.find({"productId": product["_id"], **variant_filters}))
+
+            # Fetch associated variants
+            variants = list(mongo.db.ProductVariant.find({
+                "productId": ObjectId(product["_id"]), **variant_filters
+            }))
+
+            # Convert ObjectId to string for compatibility
             for variant in variants:
                 variant["_id"] = str(variant["_id"])
+
             product["variants"] = variants
         return products
+
+    @staticmethod
+    def get_trending_products(limit=4):
+        """Fetch trending products."""
+        products = mongo.db.Product.find({"isTrending": True}).limit(limit)
+        result = []
+        for product in products:
+            product["_id"] = str(product["_id"])
+            # Get the price from the cheapest variant if available
+            variants = list(mongo.db.ProductVariant.find({"productId": ObjectId(product["_id"])}))
+            product["price"] = min(variant["price"] for variant in variants) if variants else "N/A"
+            product["imageUrls"] = product.get("imageUrls", [])
+            result.append(product)
+        return result
+
 
 

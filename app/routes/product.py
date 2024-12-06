@@ -62,28 +62,55 @@ def product_details(product_id):
 
 @product_bp.route('/filter', methods=['GET'])
 def filter_products():
+    """Filter products based on category, subcategory, and product variants."""
     filters = {}
-    category = request.args.get('category')
-    subcategory = request.args.get('subcategory')
+    variant_filters = {}
+
+    # Collect filter criteria
+    category_id = request.args.get('categoryId')
+    subcategory_id = request.args.get('subcategoryId')
     size = request.args.get('size')
     color = request.args.get('color')
     material = request.args.get('material')
-    min_price = request.args.get('min_price', type=float)
-    max_price = request.args.get('max_price', type=float)
-    sort = request.args.get('sort')
+    min_price = request.args.get('minPrice', type=float)
+    max_price = request.args.get('maxPrice', type=float)
 
-    if category:
-        filters['category'] = category
-    if subcategory:
-        filters['subcategory'] = subcategory
+    # Apply category and subcategory filters
+    if category_id:
+        filters["categoryId"] = ObjectId(category_id)
+    if subcategory_id:
+        filters["subcategoryId"] = ObjectId(subcategory_id)
+
+    # Apply variant filters
     if size:
-        filters['size'] = size
+        variant_filters["size"] = size
     if color:
-        filters['color'] = color
+        variant_filters["color"] = color
     if material:
-        filters['material'] = material
+        variant_filters["material"] = material
     if min_price is not None:
-        filters
+        variant_filters["price"] = {"$gte": min_price}
+    if max_price is not None:
+        if "price" in variant_filters:
+            variant_filters["price"]["$lte"] = max_price
+        else:
+            variant_filters["price"] = {"$lte": max_price}
+
+    # Fetch products and categories/subcategories
+    products = Product.get_filtered_products(filters, variant_filters)
+    categories = Category.get_all_categories()
+    subcategories = Subcategory.get_all_subcategories()
+
+    return render_template(
+        'products/product_list.html',
+        products=products,
+        categories=categories,
+        subcategories=subcategories,
+        selected_category=category_id,
+        selected_subcategory=subcategory_id
+    )
+
+
 
 
 @product_bp.route('/', methods=['GET'])
@@ -199,3 +226,4 @@ def create_product():
         "productId": str(product_id),
         "variantIds": [str(vid) for vid in variant_ids]
     }), 201
+

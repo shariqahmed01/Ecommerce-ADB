@@ -29,3 +29,12 @@ class Subcategory:
     @staticmethod
     def create_subcategory(subcategory_data):
         return mongo.db.Subcategory.insert_one(subcategory_data)
+
+    @staticmethod
+    def get_all_subcategories():
+        """Fetch all subcategories."""
+        subcategories = list(mongo.db.Subcategory.find())
+        for subcategory in subcategories:
+            subcategory["_id"] = str(subcategory["_id"])
+            subcategory["categoryId"] = str(subcategory["categoryId"])
+        return subcategories

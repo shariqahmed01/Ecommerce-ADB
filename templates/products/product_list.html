@@ -108,54 +108,58 @@
         <p>Browse through our collection of amazing products.</p>
 
         <!-- Filters and Search Bar -->
-        <form method="GET" action="{{ url_for('product.product_list') }}">
-            <select name="categoryId">
+        <form method="GET" action="{{ url_for('product.filter_products') }}">
+            <select name="categoryId" onchange="this.form.submit()">
                 <option value="">All Categories</option>
                 {% for category in categories %}
                     <option value="{{ category['_id'] }}"
-                            {% if request.args.get('categoryId') == category['_id'] %}selected{% endif %}>{{ category['name'] }}</option>
+                            {% if selected_category == category['_id'] %}selected{% endif %}>
+                        {{ category['name'] }}
+                    </option>
                 {% endfor %}
             </select>
 
             <select name="subcategoryId">
                 <option value="">All Subcategories</option>
                 {% for subcategory in subcategories %}
-                    <option value="{{ subcategory['_id'] }}">{{ subcategory['name'] }}</option>
+                    {% if subcategory['categoryId'] == selected_category %}
+                        <option value="{{ subcategory['_id'] }}"
+                                {% if selected_subcategory == subcategory['_id'] %}selected{% endif %}>
+                            {{ subcategory['name'] }}
+                        </option>
+                    {% endif %}
                 {% endfor %}
             </select>
 
-            <input type="text" name="size" placeholder="Size">
-            <input type="text" name="color" placeholder="Color">
-            <input type="text" name="material" placeholder="Material">
-            <input type="number" name="minPrice" placeholder="Min Price">
-            <input type="number" name="maxPrice" placeholder="Max Price">
+            <input type="text" name="size" placeholder="Size" value="{{ request.args.get('size', '') }}">
+            <input type="text" name="color" placeholder="Color" value="{{ request.args.get('color', '') }}">
+            <input type="text" name="material" placeholder="Material" value="{{ request.args.get('material', '') }}">
+            <input type="number" name="minPrice" placeholder="Min Price" value="{{ request.args.get('minPrice', '') }}">
+            <input type="number" name="maxPrice" placeholder="Max Price" value="{{ request.args.get('maxPrice', '') }}">
             <button type="submit">Filter</button>
         </form>
+
 
         <!-- Product Grid -->
         <div class="products-grid">
             {% for product in products %}
                 <div class="product">
                     <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">
-
                         <figure>
-                            <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}"
-                                 alt="{{ product.get('name', 'Unnamed Product') }}">
-                            <figcaption>{{ product['name'] or 'Unnamed Product' }}</figcaption>
+                            <img src="{{ product.imageUrls[0] if product.imageUrls else url_for('static', filename='images/default-product.jpg') }}"
+                                 alt="{{ product.name }}">
+                            <figcaption>{{ product.name }}</figcaption>
                             <figcaption>
-    Price: From ${{ product['variants'][0]['price'] if product['variants'] else 'N/A' }}
-</figcaption>
-
-
-
+                                Price: From ${{ product.variants[0]['price'] if product.variants else 'N/A' }}
+                            </figcaption>
                         </figure>
                     </a>
                 </div>
             {% else %}
-                <!-- No Products Available -->
-                <p>No products available for the selected filters.</p>
+                <p>No products found for the selected filters.</p>
             {% endfor %}
         </div>
+
     </div>
 </main>
 
