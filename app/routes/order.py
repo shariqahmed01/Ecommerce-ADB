@@ -69,25 +69,26 @@ def view_orders():
     for order in orders:
         items = []
         for item in order['items']:
-            product = Product.get_product_by_id(item['productId'])
+            product = Product.get_product_by_id(item.get('productId'))
             if product:
                 items.append({
-                    "product_id": str(item['productId']),
-                    "name": product['name'],
+                    "product_id": str(item.get('productId')),
+                    "name": product.get('name', 'Unnamed Product'),
                     "image": product['imageUrls'][0] if product.get('imageUrls') else url_for('static', filename='images/default-product.jpg'),
                     "price": item.get('price', 0.0),
-                    "quantity": item.get('quantity', 0),
-                    "total": item.get('price', 0.0) * item.get('quantity', 0)
+                    "quantity": item.get('quantity', 1),
+                    "total": round(item.get('price', 0.0) * item.get('quantity', 1), 2)
                 })
         formatted_orders.append({
             "order_id": str(order['_id']),
-            "order_date": order['orderDate'].strftime("%Y-%m-%d %H:%M:%S"),
-            "status": order.get('status', 'unknown'),
+            "order_date": order['orderDate'].strftime("%Y-%m-%d %H:%M:%S") if 'orderDate' in order else "Unknown Date",
+            "status": order.get('status', 'unknown').capitalize(),
             "items": items,
-            "total_amount": order.get('totalAmount', 0.0)
+            "total_amount": round(order.get('totalAmount', 0.0), 2)
         })
 
     return render_template('orders/view_orders.html', orders=formatted_orders)
+
 
 
 

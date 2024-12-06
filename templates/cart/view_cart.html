@@ -130,10 +130,18 @@
                 <tbody>
                 {% for item in cart %}
                     <tr data-product-id="{{ item.product_id }}" data-variant-id="{{ item.variant_id }}">
-                        <td>{{ item.name }} <br>
-                            <small>{{ item.variant_details.size }} | {{ item.variant_details.color }}
-                                | {{ item.variant_details.material }}</small>
+                        <td>
+                            {{ item.name }} <br>
+                            <small>
+                                {% if item.variant_details %}
+                                    {{ item.variant_details.size }} | {{ item.variant_details.color }} |
+                                    {{ item.variant_details.material }}
+                                {% else %}
+                                    Variant details not available
+                                {% endif %}
+                            </small>
                         </td>
+
                         <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}"
                                  alt="{{ item.name }}"></td>
                         <td>${{ item.price }}</td>
@@ -185,49 +193,54 @@
 <!-- Scripts -->
 <script>
     function updateCartQuantity(productId, variantId, quantity) {
-        fetch('/cart/update', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10)})
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update the item's total
-                    const row = document.querySelector(`tr[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
-                    if (row) {
-                        row.querySelector('td:nth-child(5)').textContent = `$${data.item_total.toFixed(2)}`;
-                    }
-
-                    // Update cart totals
-                    document.querySelector('.totals p:nth-child(1)').textContent = `Subtotal: $${data.subtotal.toFixed(2)}`;
-                    document.querySelector('.totals p:nth-child(2)').textContent = `Tax (10%): $${data.tax.toFixed(2)}`;
-                    document.querySelector('.totals p:nth-child(3)').textContent = `Shipping: $${data.shipping.toFixed(2)}`;
-                    document.querySelector('.totals .grand-total').textContent = `Grand Total: $${data.grand_total.toFixed(2)}`;
-                } else {
-                    alert(data.message || 'Failed to update item quantity.');
+    fetch('/cart/update', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10)})
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the item's total
+                const row = document.querySelector(`tr[data-product-id="${productId}"][data-variant-id="${variantId}"]`);
+                if (row) {
+                    row.querySelector('td:nth-child(6)').textContent = `$${data.item_total.toFixed(2)}`;
                 }
-            })
-            .catch(error => console.error('Error:', error));
-    }
 
-    function removeFromCart(productId, variantId) {
-        fetch('/cart/remove', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({product_id: productId, variant_id: variantId})
+                // Update cart totals
+                document.querySelector('.totals p:nth-child(1)').textContent = `Subtotal: $${data.subtotal.toFixed(2)}`;
+                document.querySelector('.totals p:nth-child(2)').textContent = `Tax (10%): $${data.tax.toFixed(2)}`;
+                document.querySelector('.totals p:nth-child(3)').textContent = `Shipping: $${data.shipping.toFixed(2)}`;
+                document.querySelector('.totals .grand-total').textContent = `Grand Total: $${data.grand_total.toFixed(2)}`;
+            } else {
+                alert(data.message || 'Failed to update item quantity.');
+            }
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message || 'Failed to remove item.');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    }
+        .catch(error => console.error('Error:', error));
+}
+
+
+   function removeFromCart(productId, variantId) {
+    console.log('Attempting to remove:', { productId, variantId }); // Debug log
+
+    fetch('/cart/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, variant_id: variantId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Remove response:', data); // Debug log
+        if (data.success) {
+            alert(data.message);
+            location.reload(); // Reload the page on success
+        } else {
+            alert(data.message || 'Failed to remove item.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
 
 </script>
 </body>

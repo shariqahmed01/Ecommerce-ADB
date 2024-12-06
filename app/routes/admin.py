@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, flash, session, redirect, url_for, render_template
 
+from app.models.category import Category, Subcategory
 from app.models.customer import Customer
 from app.models.order import Order
 from app.models.product import Product
@@ -84,18 +85,7 @@ def remove_product(product_id):
     return redirect(url_for('admin.manage_products'))
 
 # View all orders
-@admin_bp.route('/orders', methods=['GET'])
-def manage_orders():
-    """Admin view for managing orders."""
-    orders = Order.get_all_orders()
 
-    # Fetch customer details and map customerId to customer name or username
-    for order in orders:
-        customer = Customer.get_customer_by_id(order['customerId'])
-        # Use 'username' if 'name' is not present
-        order['customerName'] = customer.get('name', customer.get('username', "Unknown Customer")) if customer else "Unknown Customer"
-
-    return render_template('admin/manage_orders.html', orders=orders)
 
 
 # Update the status of an order

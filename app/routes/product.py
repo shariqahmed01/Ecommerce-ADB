@@ -154,3 +154,48 @@ def get_product_details(product_id):
     product["variants"] = variants if variants else []  # Ensure `variants` is always a list
     return product
 
+@product_bp.route('/create', methods=['POST'])
+def create_product():
+    data = request.get_json()
+
+    # Extract and validate product data
+    product_data = {
+        "name": data.get("name"),
+        "description": data.get("description"),
+        "categoryId": ObjectId(data.get("categoryId")),
+        "subcategoryId": ObjectId(data.get("subcategoryId")),
+        "imageUrls": data.get("imageUrls", []),
+        "isTrending": data.get("isTrending", False),
+        "productVariantIds": []
+    }
+
+    # Insert product into the database
+    product_result = mongo.db.Product.insert_one(product_data)
+    product_id = product_result.inserted_id
+
+    # Insert product variants and associate them with the product
+    variants = data.get("variants", [])
+    variant_ids = []
+    for variant in variants:
+        variant_data = {
+            "productId": product_id,
+            "size": variant.get("size"),
+            "color": variant.get("color"),
+            "material": variant.get("material"),
+            "stockQuantity": variant.get("stockQuantity"),
+            "price": variant.get("price")
+        }
+        variant_result = mongo.db.ProductVariant.insert_one(variant_data)
+        variant_ids.append(variant_result.inserted_id)
+
+    # Update the product with variant IDs
+    mongo.db.Product.update_one(
+        {"_id": product_id},
+        {"$set": {"productVariantIds": variant_ids}}
+    )
+
+    return jsonify({
+        "message": "Product and variants created successfully.",
+        "productId": str(product_id),
+        "variantIds": [str(vid) for vid in variant_ids]
+    }), 201
