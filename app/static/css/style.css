@@ -384,7 +384,7 @@ header nav .nav-icon {
 }
 
 #products .container .product {
-	width: 25%;
+	/*width: 25%;*/
 	display: inline-block;
 	font-size: 16px;
 	text-align: center;

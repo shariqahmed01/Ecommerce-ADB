@@ -1,41 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="{{ url_for('static', filename='css/header.css') }}" rel="stylesheet">
     <title>Login</title>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
-        /* General reset */
-        body {
-            font-family: Arial, sans-serif;
+        /* General Reset and Layout */
+        html, body {
             margin: 0;
             padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
             background-color: #f4f4f9;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        main {
+            flex: 1; /* Ensures footer is pushed to the bottom */
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+        }
+
+        /* Form Container Styling */
+        .form-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
 
         h1 {
-            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
             color: #333;
-        }
-
-        /* Form container styling */
-        form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 100%;
-            margin: 20px auto;
         }
 
         label {
             display: block;
+            text-align: left;
             margin-bottom: 8px;
             font-weight: bold;
             color: #555;
@@ -55,7 +69,7 @@
             width: 100%;
             padding: 10px;
             border: none;
-            background-color: #ce0096;
+            background-color: #4CAF50;
             color: #fff;
             border-radius: 4px;
             font-size: 16px;
@@ -64,7 +78,7 @@
         }
 
         button:hover {
-            background-color: #ce0095;
+            background-color: #45a049;
         }
 
         a {
@@ -72,70 +86,63 @@
             margin-top: 10px;
             text-align: center;
             text-decoration: none;
-            color: #ce0096;
+            color: #4CAF50;
             transition: color 0.3s ease;
         }
 
         a:hover {
-            color: #ce0095;
+            color: #388e3c;
         }
-
 
         ul {
             list-style-type: none;
             padding: 0;
+            margin-bottom: 1rem;
         }
 
         li {
             color: #d9534f;
             margin-bottom: 10px;
         }
-
-        .form-container {
-            text-align: center;
-        }
-
-
     </style>
 </head>
+
 <body>
-<nav id="nav">
-			<div class="logo nav-common"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo"></div>
-			<ul class="nav-common">
-				<li><a href="/">home</a></li>
-				<li><a href="/products">products</a></li>
-				<li><a href="/auth/login">Login</a></li>
-				<li><a href="/cart">Cart</a></li>
-				<li><a href="/contact">Contact</a></li>
-			</ul>
-			<div class="cart nav-icon nav-common"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412544/E-commerce%20landing%20page/icons/shopping_cart_1x.png" alt="shopping-cart"></div>
-			<div class="menu nav-icon nav-common"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412543/E-commerce%20landing%20page/icons/menu_1x.png" alt="hamburger-menu"></div>
-		</nav>
-    <div class="form-container">
-        <h1>Login</h1>
+    <!-- Include Header -->
+    {% include "layouts/header.html" %}
 
-        <!-- Display flash messages -->
-        {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-        <ul>
-            {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        {% endwith %}
+    <!-- Main Content -->
+    <main>
+        <div class="form-container">
+            <h1>Login</h1>
 
-        <form action="{{ url_for('auth.login') }}" method="POST">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+            <!-- Display flash messages -->
+            {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
 
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+            <form action="{{ url_for('auth.login') }}" method="POST">
+                <label for="username">Email:</label>
+                <input type="text" id="username" name="username" required>
 
-            <button type="submit">Login</button>
-        </form>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
 
-        <a href="/auth/register">Don't have an account? Register</a>
-    </div>
+                <button type="submit">Login</button>
+            </form>
+
+            <a href="/auth/register">Don't have an account? Register</a>
+        </div>
+    </main>
+
+    <!-- Include Footer -->
+    {% include "layouts/footer.html" %}
 </body>
+
 </html>

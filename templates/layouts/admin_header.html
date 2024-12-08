@@ -1,0 +1,51 @@
+<header>
+    <style>
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between; /* Ensures space between logo and links */
+            align-items: center;
+        }
+
+        .brand-logo img {
+            max-height: 50px;
+        }
+
+        .header-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .header-links a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .header-links a:hover {
+            color: #4CAF50;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+    </style>
+    <div class="header-container">
+        <!-- Brand Logo -->
+        <h1>Shopease</h1>
+
+        <!-- Navigation Links -->
+        <div class="header-links">
+            <a href="/admin/dashboard">Home</a>
+            <a href="/auth/logout">Logout</a>
+        </div>
+    </div>
+</header>

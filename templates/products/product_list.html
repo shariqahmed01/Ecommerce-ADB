@@ -7,11 +7,43 @@
     <title>Product List</title>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
-        /* Styling for Product List */
+        /* General Reset */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        main {
+            flex: 1;
+        }
+
         .product-list-container {
             max-width: 1200px;
             margin: 2rem auto;
             padding: 1rem;
+        }
+
+        .filters-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filters-bar select, .filters-bar input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 200px;
         }
 
         .products-grid {
@@ -59,55 +91,105 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <header>
-        <nav id="nav">
-            <div class="logo nav-common">
-                <img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo">
-            </div>
-            <ul class="nav-common">
-                <li><a href="/">home</a></li>
-                <li><a href="/products">products</a></li>
-                <li><a href="/cart/view">cart</a></li>
-                <li><a href="/contact">contact</a></li>
-                {% if session.get('customer_name') %}
-                <li><p>Welcome, {{ session.get('customer_name') }}</p></li>
-                <li><a href="/auth/logout">logout</a></li>
-                {% else %}
-                <li><a href="/auth/login">login</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </header>
+<!-- Include Header -->
+{% include "layouts/header.html" %}
 
-    <!-- Product List -->
-    <main>
-        <div class="product-list-container">
-            <h1>Our Products</h1>
-            <p>Browse through our collection of amazing products.</p>
-            <div class="products-grid">
-                {% for product in products %}
-                <div class="product">
-                    <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">
-                        <figure>
-                            <img src="{{ product['imageUrls'][0] if product.get('imageUrls') and product['imageUrls'] else url_for('static', filename='images/default-product.jpg') }}" alt="{{ product.get('name', 'Unnamed Product') }}">
-                            <figcaption>{{ product['name'] or 'Unnamed Product' }}</figcaption>
-                            <figcaption>${{ product['price'] if product.get('price') else 'N/A' }}</figcaption>
-                        </figure>
-                    </a>
-                </div>
-                {% else %}
-                <!-- No Products Available -->
-                <p>No products available at the moment.</p>
+<!-- Main Content -->
+<main>
+    <div class="product-list-container">
+        <h1>Our Products</h1>
+        <p>Browse through our collection of amazing products.</p>
+
+        <!-- Filters and Search Bar -->
+       <!-- <form method="GET" action="{{ url_for('product.filter_products') }}">
+
+            <select id="category-select" name="categoryId" onchange="updateSubcategories()" required>
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category['_id'] }}"
+                        {% if selected_category == category['_id'] %}selected{% endif %}>
+                        {{ category['name'] }}
+                    </option>
                 {% endfor %}
-            </div>
+            </select>  -->
+
+            <!-- Subcategories -->
+            <!-- <select id="subcategory-select" name="subcategoryId">
+                <option value="">All Subcategories</option>
+                {% for subcategory in subcategories %}
+                    {% if subcategory['categoryId'] == selected_category %}
+                        <option value="{{ subcategory['_id'] }}"
+                                {% if selected_subcategory == subcategory['_id'] %}selected{% endif %}>
+                            {{ subcategory['name'] }}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>  -->
+
+           <!-- <input type="text" name="size" placeholder="Size" value="{{ request.args.get('size', '') }}">
+            <input type="text" name="color" placeholder="Color" value="{{ request.args.get('color', '') }}">
+            <input type="text" name="material" placeholder="Material" value="{{ request.args.get('material', '') }}">
+            <input type="number" name="minPrice" placeholder="Min Price" value="{{ request.args.get('minPrice', '') }}">
+            <input type="number" name="maxPrice" placeholder="Max Price" value="{{ request.args.get('maxPrice', '') }}">
+            <button type="submit">Filter</button>  -->
+        </form>
+
+        <!-- Product Grid -->
+<div class="products-grid">
+    {% for product in products %}
+        <div class="product">
+            <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">
+                <figure>
+                    <img src="{{ product.imageUrls[0] if product.imageUrls else url_for('static', filename='images/default-product.jpg') }}"
+                         alt="{{ product.name }}">
+                    <figcaption>{{ product.name }}</figcaption>
+                    <figcaption>
+                        {% if product.priceRange %}
+                            {% if product.priceRange.isSinglePrice %}
+                                ${{ product.priceRange.min }}
+                            {% else %}
+                                ${{ product.priceRange.min }} - ${{ product.priceRange.max }}
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </figcaption>
+                </figure>
+            </a>
         </div>
-    </main>
+    {% else %}
+        <p>No products found for the selected filters.</p>
+    {% endfor %}
+</div>
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2024 Online Clothing Store</p>
-    </footer>
+
+
+
+
+    </div>
+</main>
+
+<!-- Include Footer -->
+{% include "layouts/footer.html" %}
+
+<script>
+    async function updateSubcategories() {
+        const categoryId = document.getElementById('category-select').value;
+        const subcategorySelect = document.getElementById('subcategory-select');
+
+        subcategorySelect.innerHTML = '<option value="">Loading...</option>';
+
+        const response = await fetch(`/api/subcategories?categoryId=${categoryId}`);
+        const subcategories = await response.json();
+
+        subcategorySelect.innerHTML = '<option value="">All Subcategories</option>';
+        subcategories.forEach(subcategory => {
+            const option = document.createElement('option');
+            option.value = subcategory._id;
+            option.textContent = subcategory.name;
+            subcategorySelect.appendChild(option);
+        });
+    }
+</script>
 </body>
-
 </html>

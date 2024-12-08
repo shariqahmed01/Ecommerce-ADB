@@ -50,21 +50,31 @@ class Cart:
         return True
 
     @staticmethod
-    def remove_item(customer_id, product_id):
+    def remove_item(customer_id, product_id, variant_id):
         """Remove an item from the cart."""
         try:
             customer_id = ObjectId(customer_id)
             product_id = ObjectId(product_id)
-        except Exception:
+            variant_id = ObjectId(variant_id)
+        except Exception as e:
+            print(f"Invalid IDs provided: {e}")
             return False
 
+        # Fetch the customer's cart
         cart = Cart.get_cart(customer_id)
-        cart["items"] = [item for item in cart["items"] if item["productId"] != product_id]
+        if not cart:
+            return False
+
+        # Filter out the item with matching productId and variantId
+        updated_items = [
+            item for item in cart["items"]
+            if not (item["productId"] == product_id and item["variantId"] == variant_id)
+        ]
 
         # Update the cart in the database
         mongo.db.Cart.update_one(
             {"customerId": customer_id},
-            {"$set": {"items": cart["items"]}}
+            {"$set": {"items": updated_items}}
         )
         return True
 

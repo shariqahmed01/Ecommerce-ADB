@@ -4,47 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Cart</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Your Cart</title>
     <style>
-        /* Common styles */
+        /* Reset and Flexbox for Footer */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-        }
-
-        header {
-            background-color: #333;
-            color: white;
-            padding: 1rem;
-        }
-
-        header .nav-common {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
+            flex-direction: column;
+            min-height: 100%;
         }
 
-        header .nav-common ul {
-            list-style: none;
-            display: flex;
-            gap: 1rem;
-            padding: 0;
-            margin: 0;
-        }
-
-        header .nav-common a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        header .nav-common a:hover {
-            text-decoration: underline;
+        main {
+            flex: 1; /* Pushes footer to the bottom if content is short */
         }
 
         .container {
@@ -86,10 +63,25 @@
             border-radius: 4px;
         }
 
+        .totals {
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+        .totals p {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+
+        .totals .grand-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
         .cart-actions {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            margin-top: 2rem;
         }
 
         .cart-actions button {
@@ -112,130 +104,124 @@
             font-size: 1.5rem;
             color: #666;
         }
-
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 1rem;
-            margin-top: 2rem;
-        }
-
-        footer p {
-            margin: 0;
-        }
     </style>
 </head>
 
 <body>
-    <!-- Header -->
-    <header>
-        <div class="nav-common">
-            <div class="logo"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412541/E-commerce%20landing%20page/icons/BRANDY_1x.png" alt="brand-logo"></div>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/products">Products</a></li>
-                <li><a href="/cart">Cart</a></li>
-                <li><a href="/contact">Contact</a></li>
-                {% if session.get('customer_name') %}
-                <li><a href="/auth/logout">Logout ({{ session.get('customer_name') }})</a></li>
-                {% else %}
-                <li><a href="/auth/login">Login</a></li>
-                {% endif %}
-            </ul>
-        </div>
-    </header>
+    <!-- Include Header -->
+    {% include "layouts/header.html" %}
 
-    <!-- Cart Content -->
-    <div class="container">
-        <h1>Your Cart</h1>
-        {% if cart and cart|length > 0 %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Image</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in cart %}
-                <tr data-product-id="{{ item.product_id }}">
-                    <td>{{ item.name }}</td>
-                    <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}" alt="{{ item.name }}"></td>
-                    <td>${{ item.price }}</td>
-                    <td>
-                        <select class="quantity-select" onchange="updateCartQuantity('{{ item.product_id }}', this.value)">
-                            {% for i in range(1, 21) %}
-                            <option value="{{ i }}" {% if i == item.quantity %}selected{% endif %}>{{ i }}</option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                    <td class="item-total">${{ item.total }}</td>
-                    <td>
-                        <button onclick="removeFromCart('{{ item.product_id }}')">Remove</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="cart-actions">
-            <button onclick="window.location.href='/products'">Continue Shopping</button>
-            <button onclick="window.location.href='/checkout'">Checkout</button>
-        </div>
-        {% else %}
-        <div class="empty-cart">
-            <p>Your cart is empty. <a href="/products">Start shopping</a>.</p>
-        </div>
-        {% endif %}
-    </div>
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <h1>Your Cart</h1>
+            {% if cart and cart|length > 0 %}
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Image</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in cart %}
+                        <tr data-product-id="{{ item.product_id }}" data-variant-id="{{ item.variant_id }}">
+                            <td>
+                                {{ item.name }} <br>
+                                <small>
+                                    {% if item.variant_details %}
+                                        {{ item.variant_details.size }} | {{ item.variant_details.color }} |
+                                        {{ item.variant_details.material }}
+                                    {% else %}
+                                        Variant details not available
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}" alt="{{ item.name }}"></td>
+                            <td>${{ item.price }}</td>
+                            <td>
+                                <select class="quantity-select"
+                                        onchange="updateCartQuantity('{{ item.product_id }}', '{{ item.variant_id }}', this.value)">
+                                    {% for i in range(1, 21) %}
+                                        <option value="{{ i }}" {% if i == item.quantity %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>${{ item.price * item.quantity }}</td>
+                            <td>
+                                <button onclick="removeFromCart('{{ item.product_id }}', '{{ item.variant_id }}')">Remove</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
 
-    <!-- Footer -->
-	<footer>
-		<p class="copy-right"><img src="https://res.cloudinary.com/de8cuyd0n/image/upload/v1520412543/E-commerce%20landing%20page/icons/copy-right-img_1x.png" alt="copy right image" /> 2017 all right recived </p>
-		<p>privacy policy</p>
-		<p>license</p>
-	</footer>
+                <!-- Totals Section -->
+                <div class="totals">
+                    <p>Subtotal: ${{ subtotal }}</p>
+                    <p>Tax (10%): ${{ tax }}</p>
+                    <p>Shipping: ${{ shipping }}</p>
+                    <p class="grand-total">Grand Total: ${{ grand_total }}</p>
+                </div>
 
+                <!-- Cart Actions -->
+                <div class="cart-actions">
+                    <button onclick="window.location.href='/products'">Continue Shopping</button>
+                    <button onclick="window.location.href='/checkout'">Checkout</button>
+                </div>
+            {% else %}
+                <div class="empty-cart">
+                    <p>Your cart is empty. <a href="/products">Start shopping</a>.</p>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Include Footer -->
+    {% include "layouts/footer.html" %}
+
+    <!-- Scripts -->
     <script>
-        function updateCartQuantity(productId, quantity) {
-            fetch('/cart/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ product_id: productId, quantity: parseInt(quantity) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const row = document.querySelector(`[data-product-id="${productId}"]`);
-                    const price = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('$', ''));
-                    const totalCell = row.querySelector('.item-total');
-                    totalCell.textContent = `$${(price * quantity).toFixed(2)}`;
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
+        function updateCartQuantity(productId, variantId, quantity) {
+    fetch('/cart/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update subtotal and totals dynamically
+            document.querySelector(`[data-product-id="${productId}"][data-variant-id="${variantId}"] td:nth-child(5)`).innerText = `$${data.item_total}`;
+            document.querySelector('.totals p:nth-child(1)').innerText = `Subtotal: $${data.subtotal}`;
+            document.querySelector('.totals p:nth-child(2)').innerText = `Tax (10%): $${data.tax}`;
+            document.querySelector('.totals p:nth-child(3)').innerText = `Shipping: $${data.shipping}`;
+            document.querySelector('.totals .grand-total').innerText = `Grand Total: $${data.grand_total}`;
+        } else {
+            alert(data.message || 'Failed to update item quantity.');
         }
+    })
+    .catch(error => console.error('Error:', error));
+}
 
-        function removeFromCart(productId) {
+
+        function removeFromCart(productId, variantId) {
             fetch('/cart/remove', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ product_id: productId })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId, variant_id: variantId })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     alert(data.message);
-                    location.reload(); // Reload the page to update the cart
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to remove item.');
                 }
             })
             .catch(error => console.error('Error:', error));

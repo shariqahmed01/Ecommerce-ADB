@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orders.css') }}">
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .order {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            padding: 1rem;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 1rem;
+        }
+
+        .order-header h2 {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .order-header p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .order-items {
+            margin-top: 1rem;
+        }
+
+        .order-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .order-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            margin-right: 1rem;
+            border-radius: 4px;
+        }
+
+        .review-form {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .review-form textarea {
+            width: 100%;
+            height: 80px;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+        }
+
+        .review-form button {
+            margin-top: 0.5rem;
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .review-form button:hover {
+            background-color: #45a049;
+        }
+
+        .status {
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .status.delivered {
+            color: green;
+        }
+
+        .status.processing {
+            color: orange;
+        }
+    </style>
+</head>
+
+<body>
+    {% include "layouts/header.html" %}
+
+    <div class="container">
+    <h1>Your Order History</h1>
+
+    {% for order in orders %}
+    <div class="order">
+        <div class="order-header">
+            <h2>Order ID: {{ order.order_id }}</h2>
+            <p>Order Date: {{ order.order_date.strftime('%Y-%m-%d') }}</p>
+            <p class="status {{ order.status }}">{{ order.status }}</p>
+        </div>
+        <div class="order-items">
+            {% for item in order.items %}
+            <div class="order-item">
+                <img src="{{ item.image }}" alt="{{ item.name }}">
+                <div>
+                    <p><strong>{{ item.name }}</strong></p>
+                    <p>Price: ${{ item.price }}</p>
+                    <p>Quantity: {{ item.quantity }}</p>
+                    <p>Total: ${{ item.total }}</p>
+                </div>
+            </div>
+            {% if order.status == 'delivered' %}
+            <div class="review-form">
+                <form action="{{ url_for('order.submit_review', product_id=item.product_id) }}" method="POST">
+                    <label for="rating-{{ item.product_id }}">Rating (1-5):</label>
+                    <select id="rating-{{ item.product_id }}" name="rating" required>
+                        {% for i in range(1, 6) %}
+                        <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                    <textarea name="comment" placeholder="Write your review..." required></textarea>
+                    <button type="submit">Submit Review</button>
+                </form>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <p><strong>Total Amount:</strong> ${{ order.total_amount }}</p>
+    </div>
+    {% endfor %}
+</div>
+
+
+    {% include "layouts/footer.html" %}
+</body>
+
+</html>

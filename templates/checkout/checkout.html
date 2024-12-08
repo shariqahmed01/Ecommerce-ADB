@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
     <style>
-        /* Basic styling */
-        body {
-            font-family: Arial, sans-serif;
+        /* General Reset and Layout */
+        html, body {
             margin: 0;
             padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
             background-color: #f9f9f9;
         }
-        header {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 1.5rem 0;
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
         }
+
+        main {
+            flex: 1;
+        }
+
         .container {
             max-width: 800px;
             margin: 2rem auto;
@@ -27,35 +34,51 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        h2 {
+
+        h1, h2 {
             color: #333;
+            text-align: center;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 2rem;
         }
+
         th, td {
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background-color: #f4f4f4;
         }
+
+        td img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
         .form-group {
             margin-top: 1.5rem;
         }
+
         label {
             font-weight: bold;
         }
-        input, textarea {
+
+        input, textarea, select {
             width: 100%;
             padding: 0.8rem;
             margin-top: 0.5rem;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+
         button {
             width: 100%;
             padding: 1rem;
@@ -65,55 +88,207 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
+        .totals {
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+        .totals p {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+
+        .totals .grand-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .coupon-section {
+            margin-bottom: 2rem;
+        }
+
+        .card-details {
+            margin-top: 1.5rem;
+        }
+
+        .card-details input {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
+
 <body>
+<!-- Include Header -->
+{% include "layouts/header.html" %}
 
-<header>
-    <h1>Checkout</h1>
-</header>
-
-<div class="container">
-    <h2>Review Your Cart</h2>
-    <table>
-        <thead>
+<!-- Main Content -->
+<main>
+    <div class="container">
+        <h1>Checkout</h1>
+        <h2>Review Your Cart</h2>
+        <table>
+            <thead>
             <tr>
+                <th>Image</th>
                 <th>Product</th>
                 <th>Price</th>
                 <th>Quantity</th>
                 <th>Total</th>
             </tr>
-        </thead>
-        <tbody>
+            </thead>
+            <tbody>
             {% for item in cart %}
-            <tr>
-                <td>{{ item.name }}</td>
-                <td>${{ item.price }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>${{ item.total }}</td>
-            </tr>
+                <tr>
+                    <td><img src="{{ item.image or url_for('static', filename='images/default-product.jpg') }}" alt="{{ item.name }}"></td>
+                    <td>{{ item.name }}</td>
+                    <td>${{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.total }}</td>
+                </tr>
             {% endfor %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
 
-    <h2>Shipping Information</h2>
-    <form action="{{ url_for('checkout.process_payment') }}" method="POST">
-        <div class="form-group">
-            <label for="address">Shipping Address</label>
-            <textarea id="address" name="address" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="contact">Contact Number</label>
-            <input type="text" id="contact" name="contact" required>
+        <!-- Order Totals -->
+        <div class="totals">
+            <p>Subtotal: ${{ subtotal }}</p>
+            <p>Tax (10%): ${{ tax }}</p>
+            <p>Shipping: $<span id="shipping_cost">{{ shipping }}</span></p>
+            <p class="grand-total">Grand Total: $<span id="grand_total">{{ grand_total }}</span></p>
         </div>
 
-        <button type="submit">Proceed to Payment</button>
-    </form>
-</div>
+
+        <!-- Coupon Section -->
+        <div class="coupon-section">
+            <label for="coupon">Have a coupon code?</label>
+            <input type="text" id="coupon" placeholder="Enter coupon code">
+            <button type="button" id="apply-coupon-btn" onclick="applyCoupon()">Apply Coupon</button>
+            <p id="coupon-message" style="color: green; display: none;">Coupon applied successfully! 10% off.</p>
+        </div>
 
 
-</body>
-</html>
+        <h2>Shipping Information</h2>
+        <form action="{{ url_for('checkout.process_payment') }}" method="POST">
+            <div class="form-group">
+                <label for="address">Shipping Address</label>
+                <textarea id="address" name="address" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="contact">Contact Number</label>
+                <input type="text" id="contact" name="contact" required>
+            </div>
+
+            <!-- Shipping Options -->
+            <div class="form-group">
+                <label for="shipping_method">Select Shipping Method</label>
+                <select id="shipping_method" name="shipping_method" onchange="updateShippingCost()" required>
+                    <option value="standard" data-cost="5">Standard Shipping ($5)</option>
+                    <option value="fast" data-cost="15">Fast Shipping ($15)</option>
+                </select>
+            </div>
+
+            <!-- Payment Method -->
+            <h2>Payment Method</h2>
+            <div class="form-group"><label for="payment_method">Select Payment Method</label> <select
+                    id="payment_method" name="payment_method" required>
+                <option value="credit_card" selected="selected">Credit/Debit Card</option>
+                <option value="paypal">PayPal</option>
+                <option value="digital_wallet">Digital Wallet</option>
+            </select></div>
+            <!-- Card Details -->
+            <div id="card_details" class="card-details">
+                <div class="form-group">
+                    <label for="cardholder_name">Cardholder Name</label>
+                    <input type="text" id="cardholder_name" name="cardholder_name" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="card_number">Card Number</label>
+                    <input type="text" id="card_number" name="card_number" placeholder="1234 5678 9012 3456">
+                </div>
+                <div class="form-group">
+                    <label for="expiry_date">Expiry Date</label>
+                    <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/YY">
+                </div>
+                <div class="form-group">
+                    <label for="cvv">CVV</label>
+                    <input type="text" id="cvv" name="cvv" placeholder="123">
+                </div>
+            </div>
+
+            <button type="submit">Proceed to Payment</button>
+        </form>
+    </div>
+</main>
+
+<!-- Include Footer -->
+{% include "layouts/footer.html" %}
+
+<!-- Scripts -->
+<script>
+    function applyCoupon() {
+    const couponInput = document.getElementById('coupon').value.trim();
+    const validCoupon = "DISCOUNT10"; // Dummy valid coupon
+    const couponMessage = document.getElementById('coupon-message');
+    const applyButton = document.getElementById('apply-coupon-btn');
+    let grandTotalElement = document.getElementById('grand_total');
+
+    if (couponInput === validCoupon) {
+        const currentTotal = parseFloat(grandTotalElement.textContent);
+        const discount = currentTotal * 0.10; // 10% discount
+        const newTotal = currentTotal - discount;
+
+        // Update the Grand Total
+        grandTotalElement.textContent = newTotal.toFixed(2);
+
+        // Show success message
+        couponMessage.style.display = "block";
+        couponMessage.textContent = "Coupon applied successfully! 10% off.";
+        couponMessage.style.color = "green";
+
+        // Disable the coupon input and button
+        applyButton.disabled = true;
+        applyButton.style.backgroundColor = "#ccc"; // Optional: Change button style to indicate disabled state
+        applyButton.style.cursor = "not-allowed";
+        document.getElementById('coupon').disabled = true;
+    } else {
+        // Show invalid coupon message
+        couponMessage.style.display = "block";
+        couponMessage.textContent = "Invalid coupon code. Please try again.";
+        couponMessage.style.color = "red";
+    }
+}
+
+
+    function updateShippingCost() {
+        const shippingMethod = document.getElementById('shipping_method');
+        const selectedOption = shippingMethod.options[shippingMethod.selectedIndex];
+        const shippingCost = parseFloat(selectedOption.getAttribute('data-cost'));
+        const subtotal = parseFloat({{ subtotal }});
+        const tax = parseFloat({{ tax }});
+        const grandTotal = subtotal + tax + shippingCost;
+
+        document.getElementById('shipping_cost').innerText = shippingCost.toFixed(2);
+        document.getElementById('grand_total').innerText = grandTotal.toFixed(2);
+    }
+
+    document.getElementById('payment_method').addEventListener('change', function () {
+        const cardDetails = document.getElementById('card_details');
+        if (this.value === 'credit_card') {
+            cardDetails.style.display = 'block';
+        } else {
+            cardDetails.style.display = 'none';
+        }
+    });
+
+    const flashMessages = JSON.parse('{{ get_flashed_messages(with_categories=True) | tojson | safe }}');
+
+    flashMessages.forEach(([category, message]) => {
+        alert(message); // Replace with a custom modal or toast notification for better styling
+    });
+
+</script>  

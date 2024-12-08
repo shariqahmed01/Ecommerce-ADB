@@ -7,5 +7,6 @@ def place_order(order_data):
 
 def get_orders(user_id):
     """Retrieve orders for a specific user."""
-    orders = Order.get_orders_by_customer(user_id)
+    orders = Order.get_orders_by_customer_id(user_id)
+    print(orders)
     return {"success": True, "orders": orders}

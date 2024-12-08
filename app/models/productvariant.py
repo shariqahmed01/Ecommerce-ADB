@@ -14,13 +14,13 @@ class ProductVariant:
         return list(mongo.db.ProductVariant.find({"productId": product_id}))
 
     @staticmethod
+    def get_variants_by_product_id(product_id):
+        """Fetch variants for a specific product."""
+        return list(mongo.db.ProductVariant.find({"productId": product_id}))
+
+    @staticmethod
     def get_variant_by_id(variant_id):
-        """Fetch a single variant by its ID."""
-        try:
-            variant_id = ObjectId(variant_id)
-        except Exception:
-            return None  # Return None if the ID is invalid
-        return mongo.db.ProductVariant.find_one({"_id": variant_id})
+        return mongo.db.ProductVariant.find_one({"_id": ObjectId(variant_id)})
 
     @staticmethod
     def create_variant(variant_data):
