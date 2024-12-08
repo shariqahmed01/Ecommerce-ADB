@@ -14,7 +14,6 @@
             height: 100%;
         }
 
-        /* Flexbox for Layout */
         body {
             display: flex;
             flex-direction: column;
@@ -25,7 +24,6 @@
             flex: 1;
         }
 
-        /* Product List Styling */
         .product-list-container {
             max-width: 1200px;
             margin: 2rem auto;
@@ -46,11 +44,6 @@
             border-radius: 4px;
             width: 100%;
             max-width: 200px;
-        }
-
-        .search-bar {
-            flex: 1;
-            max-width: 300px;
         }
 
         .products-grid {
@@ -108,18 +101,20 @@
         <p>Browse through our collection of amazing products.</p>
 
         <!-- Filters and Search Bar -->
-        <form method="GET" action="{{ url_for('product.filter_products') }}">
-            <select name="categoryId" onchange="this.form.submit()">
+       <!-- <form method="GET" action="{{ url_for('product.filter_products') }}">
+
+            <select id="category-select" name="categoryId" onchange="updateSubcategories()" required>
                 <option value="">All Categories</option>
                 {% for category in categories %}
                     <option value="{{ category['_id'] }}"
-                            {% if selected_category == category['_id'] %}selected{% endif %}>
+                        {% if selected_category == category['_id'] %}selected{% endif %}>
                         {{ category['name'] }}
                     </option>
                 {% endfor %}
-            </select>
+            </select>  -->
 
-            <select name="subcategoryId">
+            <!-- Subcategories -->
+            <!-- <select id="subcategory-select" name="subcategoryId">
                 <option value="">All Subcategories</option>
                 {% for subcategory in subcategories %}
                     {% if subcategory['categoryId'] == selected_category %}
@@ -129,42 +124,72 @@
                         </option>
                     {% endif %}
                 {% endfor %}
-            </select>
+            </select>  -->
 
-            <input type="text" name="size" placeholder="Size" value="{{ request.args.get('size', '') }}">
+           <!-- <input type="text" name="size" placeholder="Size" value="{{ request.args.get('size', '') }}">
             <input type="text" name="color" placeholder="Color" value="{{ request.args.get('color', '') }}">
             <input type="text" name="material" placeholder="Material" value="{{ request.args.get('material', '') }}">
             <input type="number" name="minPrice" placeholder="Min Price" value="{{ request.args.get('minPrice', '') }}">
             <input type="number" name="maxPrice" placeholder="Max Price" value="{{ request.args.get('maxPrice', '') }}">
-            <button type="submit">Filter</button>
+            <button type="submit">Filter</button>  -->
         </form>
 
-
         <!-- Product Grid -->
-        <div class="products-grid">
-            {% for product in products %}
-                <div class="product">
-                    <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">
-                        <figure>
-                            <img src="{{ product.imageUrls[0] if product.imageUrls else url_for('static', filename='images/default-product.jpg') }}"
-                                 alt="{{ product.name }}">
-                            <figcaption>{{ product.name }}</figcaption>
-                            <figcaption>
-                                <!-- Price: From ${{ product.variants[0]['price'] if product.variants else 'N/A' }} -->
-                            </figcaption>
-                        </figure>
-                    </a>
-                </div>
-            {% else %}
-                <p>No products found for the selected filters.</p>
-            {% endfor %}
+<div class="products-grid">
+    {% for product in products %}
+        <div class="product">
+            <a href="{{ url_for('product.product_details', product_id=product['_id']) }}">
+                <figure>
+                    <img src="{{ product.imageUrls[0] if product.imageUrls else url_for('static', filename='images/default-product.jpg') }}"
+                         alt="{{ product.name }}">
+                    <figcaption>{{ product.name }}</figcaption>
+                    <figcaption>
+                        {% if product.priceRange %}
+                            {% if product.priceRange.isSinglePrice %}
+                                ${{ product.priceRange.min }}
+                            {% else %}
+                                ${{ product.priceRange.min }} - ${{ product.priceRange.max }}
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </figcaption>
+                </figure>
+            </a>
         </div>
+    {% else %}
+        <p>No products found for the selected filters.</p>
+    {% endfor %}
+</div>
+
+
+
+
 
     </div>
 </main>
 
 <!-- Include Footer -->
 {% include "layouts/footer.html" %}
-</body>
 
+<script>
+    async function updateSubcategories() {
+        const categoryId = document.getElementById('category-select').value;
+        const subcategorySelect = document.getElementById('subcategory-select');
+
+        subcategorySelect.innerHTML = '<option value="">Loading...</option>';
+
+        const response = await fetch(`/api/subcategories?categoryId=${categoryId}`);
+        const subcategories = await response.json();
+
+        subcategorySelect.innerHTML = '<option value="">All Subcategories</option>';
+        subcategories.forEach(subcategory => {
+            const option = document.createElement('option');
+            option.value = subcategory._id;
+            option.textContent = subcategory.name;
+            subcategorySelect.appendChild(option);
+        });
+    }
+</script>
+</body>
 </html>

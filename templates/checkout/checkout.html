@@ -162,12 +162,15 @@
             <p class="grand-total">Grand Total: $<span id="grand_total">{{ grand_total }}</span></p>
         </div>
 
+
         <!-- Coupon Section -->
         <div class="coupon-section">
             <label for="coupon">Have a coupon code?</label>
             <input type="text" id="coupon" placeholder="Enter coupon code">
-            <button onclick="applyCoupon()">Apply Coupon</button>
+            <button type="button" id="apply-coupon-btn" onclick="applyCoupon()">Apply Coupon</button>
+            <p id="coupon-message" style="color: green; display: none;">Coupon applied successfully! 10% off.</p>
         </div>
+
 
         <h2>Shipping Information</h2>
         <form action="{{ url_for('checkout.process_payment') }}" method="POST">
@@ -228,10 +231,38 @@
 <!-- Scripts -->
 <script>
     function applyCoupon() {
-        const coupon = document.getElementById('coupon').value;
-        alert('Applying coupon: ' + coupon);
-        // Send the coupon code to the backend for validation
+    const couponInput = document.getElementById('coupon').value.trim();
+    const validCoupon = "DISCOUNT10"; // Dummy valid coupon
+    const couponMessage = document.getElementById('coupon-message');
+    const applyButton = document.getElementById('apply-coupon-btn');
+    let grandTotalElement = document.getElementById('grand_total');
+
+    if (couponInput === validCoupon) {
+        const currentTotal = parseFloat(grandTotalElement.textContent);
+        const discount = currentTotal * 0.10; // 10% discount
+        const newTotal = currentTotal - discount;
+
+        // Update the Grand Total
+        grandTotalElement.textContent = newTotal.toFixed(2);
+
+        // Show success message
+        couponMessage.style.display = "block";
+        couponMessage.textContent = "Coupon applied successfully! 10% off.";
+        couponMessage.style.color = "green";
+
+        // Disable the coupon input and button
+        applyButton.disabled = true;
+        applyButton.style.backgroundColor = "#ccc"; // Optional: Change button style to indicate disabled state
+        applyButton.style.cursor = "not-allowed";
+        document.getElementById('coupon').disabled = true;
+    } else {
+        // Show invalid coupon message
+        couponMessage.style.display = "block";
+        couponMessage.textContent = "Invalid coupon code. Please try again.";
+        couponMessage.style.color = "red";
     }
+}
+
 
     function updateShippingCost() {
         const shippingMethod = document.getElementById('shipping_method');
@@ -260,4 +291,4 @@
         alert(message); // Replace with a custom modal or toast notification for better styling
     });
 
-</script>
+</script>  

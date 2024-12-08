@@ -187,21 +187,27 @@
     <!-- Scripts -->
     <script>
         function updateCartQuantity(productId, variantId, quantity) {
-            fetch('/cart/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.message || 'Failed to update item quantity.');
-                }
-            })
-            .catch(error => console.error('Error:', error));
+    fetch('/cart/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, variant_id: variantId, quantity: parseInt(quantity, 10) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update subtotal and totals dynamically
+            document.querySelector(`[data-product-id="${productId}"][data-variant-id="${variantId}"] td:nth-child(5)`).innerText = `$${data.item_total}`;
+            document.querySelector('.totals p:nth-child(1)').innerText = `Subtotal: $${data.subtotal}`;
+            document.querySelector('.totals p:nth-child(2)').innerText = `Tax (10%): $${data.tax}`;
+            document.querySelector('.totals p:nth-child(3)').innerText = `Shipping: $${data.shipping}`;
+            document.querySelector('.totals .grand-total').innerText = `Grand Total: $${data.grand_total}`;
+        } else {
+            alert(data.message || 'Failed to update item quantity.');
         }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
 
         function removeFromCart(productId, variantId) {
             fetch('/cart/remove', {

@@ -1,6 +1,9 @@
+from flask import request, render_template
+
 from . import mongo
 from bson.objectid import ObjectId
 
+from .category import Category, Subcategory
 from .productvariant import ProductVariant
 
 
@@ -12,9 +15,42 @@ class Product:
 
     @staticmethod
     def create_product(product_data):
-        """Insert a new product."""
-        result = mongo.db.Product.insert_one(product_data)
-        return result.inserted_id  # Return the inserted ID
+        try:
+            # Insert product into the Product collection
+            product_result = mongo.db.Product.insert_one({
+                "name": product_data["name"],
+                "description": product_data["description"],
+                "categoryId": ObjectId(product_data["categoryId"]),
+                "subcategoryId": ObjectId(product_data["subcategoryId"]),
+                "imageUrls": product_data["imageUrls"],
+                "isTrending": product_data["isTrending"],
+            })
+
+            product_id = product_result.inserted_id
+
+            # Insert variants into the ProductVariant collection
+            variant_ids = []
+            for variant in product_data["variants"]:
+                variant_result = mongo.db.ProductVariant.insert_one({
+                    "productId": product_id,
+                    "size": variant.get("size"),
+                    "color": variant.get("color"),
+                    "material": variant.get("material"),
+                    "stockQuantity": int(variant.get("stockQuantity", 0)),
+                    "price": float(variant.get("price", 0.0)),
+                })
+                variant_ids.append(variant_result.inserted_id)
+
+            # Link variants to the product
+            mongo.db.Product.update_one(
+                {"_id": product_id},
+                {"$set": {"variantIds": variant_ids}}
+            )
+
+            return product_id
+
+        except Exception as e:
+            raise Exception(f"Failed to create product: {e}")
 
     @staticmethod
     def update_product(product_id, updated_data):
@@ -106,20 +142,32 @@ class Product:
 
     @staticmethod
     def get_all_products(query=None):
-        """Fetch all products matching the given query."""
+        """Fetch all products with their variant price range."""
         if query is None:
             query = {}
 
         products = list(mongo.db.Product.find(query))
         for product in products:
             product["_id"] = str(product["_id"])
+            product["categoryId"] = str(product["categoryId"])
+            product["subcategoryId"] = str(product["subcategoryId"])
 
-            # Fetch the cheapest variant price for display
-            variants = list(mongo.db.ProductVariant.find({"productId": ObjectId(product["_id"])}))
+            # Fetch the associated product variants using `productVariantIds`
+            variant_ids = [ObjectId(variant_id) for variant_id in product.get("productVariantIds", [])]
+            variants = list(mongo.db.ProductVariant.find({"_id": {"$in": variant_ids}}))
+
             if variants:
-                product["price"] = min(variant["price"] for variant in variants)
+                prices = [variant["price"] for variant in variants]
+                min_price = min(prices)
+                max_price = max(prices)
+                product["priceRange"] = {
+                    "min": min_price,
+                    "max": max_price,
+                    "isSinglePrice": min_price == max_price  # Check if prices are the same
+                }
             else:
-                product["price"] = "N/A"
+                product["priceRange"] = None  # No variants available
+
         return products
 
     @staticmethod
@@ -155,6 +203,4 @@ class Product:
             product["imageUrls"] = product.get("imageUrls", [])
             result.append(product)
         return result
-
-
 

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash
 
+from app.models import mongo
 from app.models.cart import Cart
 from app.models.customer import Customer
 from app.models.product import Product
@@ -87,7 +88,7 @@ def add_to_cart():
 
     product_id = data.get('product_id')
     variant_id = data.get('variant_id')
-    quantity = data.get('quantity', 1)
+    quantity = int(data.get('quantity', 1))
 
     # Validate product_id and variant_id
     if not product_id or not variant_id:
@@ -105,15 +106,30 @@ def add_to_cart():
     if not customer:
         return jsonify({"message": "Please log in to add items to your cart.", "success": False}), 401
 
-    # Ensure cart exists and is properly structured
+    # Ensure cart exists
     cart = customer.get('cart', [])
-    for item in cart:
-        if not all(key in item for key in ['product_id', 'variant_id', 'quantity']):
-            continue  # Skip invalid items
 
+    # Fetch the variant to check stock
+    variant = ProductVariant.get_variant_by_id(variant_id)
+    if not variant:
+        return jsonify({"message": "Variant not found.", "success": False}), 404
+
+    if variant['stockQuantity'] < quantity:
+        return jsonify({"message": "Insufficient stock.", "success": False}), 400
+
+    # Check if the item already exists in the cart
+    for item in cart:
         if item['product_id'] == str(product_id) and item['variant_id'] == str(variant_id):
+            # Update quantity in the cart
             item['quantity'] += quantity
             Customer.update_customer_cart(customer_id, cart)
+
+            # Update stock in the database
+            mongo.db.ProductVariant.update_one(
+                {"_id": variant_id},
+                {"$inc": {"stockQuantity": -quantity}}
+            )
+
             return jsonify({"message": "Cart updated successfully.", "success": True})
 
     # Add new item to cart
@@ -124,7 +140,14 @@ def add_to_cart():
     })
     Customer.update_customer_cart(customer_id, cart)
 
+    # Update stock in the database
+    mongo.db.ProductVariant.update_one(
+        {"_id": variant_id},
+        {"$inc": {"stockQuantity": -quantity}}
+    )
+
     return jsonify({"message": "Item added to cart.", "success": True})
+
 
 
 
@@ -163,10 +186,6 @@ def remove_from_cart():
         return jsonify({"message": f"An error occurred: {str(e)}", "success": False}), 500
 
 
-
-
-
-
 @cart_bp.route('/update', methods=['POST'])
 def update_cart_quantity():
     """Update the quantity of an item in the cart."""
@@ -178,7 +197,6 @@ def update_cart_quantity():
     variant_id = data.get('variant_id')
     quantity = int(data.get('quantity', 1))
 
-    # Validate input
     if not product_id or not variant_id:
         return jsonify({"message": "Product ID and Variant ID are required.", "success": False}), 400
 
@@ -188,23 +206,31 @@ def update_cart_quantity():
     except Exception:
         return jsonify({"message": "Invalid ID format.", "success": False}), 400
 
-    # Fetch customer
-    customer = Customer.get_customer_by_id(session.get('customer_id'))
+    customer_id = session.get('customer_id')
+    customer = Customer.get_customer_by_id(customer_id)
     if not customer:
         return jsonify({"message": "Please log in to update your cart.", "success": False}), 401
 
-    # Update the cart
     cart = customer.get('cart', [])
     for item in cart:
         if item['product_id'] == str(product_id) and item['variant_id'] == str(variant_id):
             item['quantity'] = quantity
-            Customer.update_customer_cart(customer['_id'], cart)
+
+            # Fetch the price from ProductVariant
+            variant = ProductVariant.get_variant_by_id(variant_id)
+            if not variant:
+                return jsonify({"message": "Variant not found.", "success": False}), 404
+
+            item['price'] = variant['price']  # Ensure price is updated in the cart
+
+            # Update the cart in the database
+            Customer.update_customer_cart(customer_id, cart)
 
             # Recalculate totals
             subtotal = sum(i['price'] * i['quantity'] for i in cart)
-            tax = subtotal * 0.1  # Example tax rate: 10%
-            shipping = 10.00 if cart else 0.00  # Example shipping rate
-            grand_total = subtotal + tax + shipping
+            tax = round(subtotal * 0.1, 2)
+            shipping = 10.00 if cart else 0.00
+            grand_total = round(subtotal + tax + shipping, 2)
 
             return jsonify({
                 "message": "Cart updated successfully.",
@@ -217,6 +243,7 @@ def update_cart_quantity():
             })
 
     return jsonify({"message": "Item not found in cart.", "success": False}), 404
+
 
 
 

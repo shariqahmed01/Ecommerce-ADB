@@ -8,7 +8,7 @@ class Order:
     @staticmethod
     def create_order(order_data):
         """Create a new order and insert it into the database."""
-        order_data["orderDate"] = datetime.utcnow()  # Ensure the order date is set to now
+        order_data["orderDate"] = datetime.now()  # Ensure the order date is set to now
         result = mongo.db.Order.insert_one(order_data)
         return result.inserted_id
 

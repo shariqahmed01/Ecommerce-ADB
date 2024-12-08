@@ -119,7 +119,7 @@ def process_payment():
     # Prepare order data
     order_data = {
         "customerId": ObjectId(customer_id),
-        "orderDate": datetime.utcnow(),
+        "orderDate": datetime.now(),
         "items": processed_cart,
         "totalAmount": round(total_amount, 2),
         "status": "pending",
@@ -133,6 +133,7 @@ def process_payment():
 
     # Clear customer's cart
     Customer.update_customer_cart(customer['_id'], [])
+
 
     flash(f"Payment successful! Order #{str(order_id)} is being processed.", "success")
     return redirect(url_for('home.index'))

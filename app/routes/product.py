@@ -13,15 +13,13 @@ product_bp = Blueprint('product', __name__, url_prefix='/products')
 
 @product_bp.route('/', methods=['GET'])
 def list_products():
-    """Display a list of products."""
+    """Display a list of products with price ranges."""
     filters = request.args.to_dict()
-    products = get_products(filters)
+    products = Product.get_all_products(filters)
 
-    # Convert ObjectId to string
-    for product in products["products"]:
-        product["_id"] = str(product["_id"])
+    return render_template('products/product_list.html', products=products)
 
-    return render_template('products/product_list.html', products=products["products"])
+
 
 
 from app.models.review import Review
@@ -77,9 +75,16 @@ def filter_products():
 
     # Apply category and subcategory filters
     if category_id:
-        filters["categoryId"] = ObjectId(category_id)
+        try:
+            filters["categoryId"] = ObjectId(category_id)
+        except Exception:
+            return jsonify({"error": "Invalid category ID"}), 400
+
     if subcategory_id:
-        filters["subcategoryId"] = ObjectId(subcategory_id)
+        try:
+            filters["subcategoryId"] = ObjectId(subcategory_id)
+        except Exception:
+            return jsonify({"error": "Invalid subcategory ID"}), 400
 
     # Apply variant filters
     if size:
@@ -109,8 +114,6 @@ def filter_products():
         selected_category=category_id,
         selected_subcategory=subcategory_id
     )
-
-
 
 
 @product_bp.route('/', methods=['GET'])
@@ -163,67 +166,94 @@ def product_list():
 def get_product_details(product_id):
     """Fetch detailed information for a product, including variants."""
     try:
-        product_id = ObjectId(product_id)
-    except Exception:
-        return None
+        product = mongo.db.Product.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            return None
 
-    # Fetch the product
-    product = mongo.db.Product.find_one({"_id": product_id})
-    if not product:
-        return None
+        product["_id"] = str(product["_id"])
+        product["categoryId"] = str(product["categoryId"])
+        product["subcategoryId"] = str(product["subcategoryId"])
 
-    # Fetch associated variants
-    variants = list(mongo.db.ProductVariant.find({"productId": product["_id"]}))
-    for variant in variants:
-        variant["_id"] = str(variant["_id"])  # Convert ObjectId to string
+        # Fetch associated variants
+        variant_ids = [ObjectId(variant_id) for variant_id in product.get("productVariantIds", [])]
+        variants = list(mongo.db.ProductVariant.find({"_id": {"$in": variant_ids}}))
 
-    product["_id"] = str(product["_id"])
-    product["variants"] = variants if variants else []  # Ensure `variants` is always a list
-    return product
+        # Add variants and default variant
+        product["variants"] = variants
+        if variants:
+            product["defaultVariant"] = variants[0]  # Use the first variant as the default
+        else:
+            product["defaultVariant"] = None
+
+        return product
+    except Exception as e:
+        raise Exception(f"Error fetching product details: {e}")
+
+
+
 
 @product_bp.route('/create', methods=['POST'])
 def create_product():
-    data = request.get_json()
+    try:
+        # Extract data from the request
+        data = request.get_json()
 
-    # Extract and validate product data
-    product_data = {
-        "name": data.get("name"),
-        "description": data.get("description"),
-        "categoryId": ObjectId(data.get("categoryId")),
-        "subcategoryId": ObjectId(data.get("subcategoryId")),
-        "imageUrls": data.get("imageUrls", []),
-        "isTrending": data.get("isTrending", False),
-        "productVariantIds": []
-    }
+        # Insert product variants and collect their IDs
+        variants = data.get("variants", [])
+        variant_ids = []
+        for variant in variants:
+            variant_data = {
+                "size": variant.get("size"),
+                "color": variant.get("color"),
+                "material": variant.get("material"),
+                "stockQuantity": int(variant.get("stockQuantity", 0)),
+                "price": float(variant.get("price", 0.0)),
+            }
+            variant_result = mongo.db.ProductVariant.insert_one(variant_data)
+            variant_ids.append(str(variant_result.inserted_id))  # Convert variantId to string
 
-    # Insert product into the database
-    product_result = mongo.db.Product.insert_one(product_data)
-    product_id = product_result.inserted_id
-
-    # Insert product variants and associate them with the product
-    variants = data.get("variants", [])
-    variant_ids = []
-    for variant in variants:
-        variant_data = {
-            "productId": product_id,
-            "size": variant.get("size"),
-            "color": variant.get("color"),
-            "material": variant.get("material"),
-            "stockQuantity": variant.get("stockQuantity"),
-            "price": variant.get("price")
+        # Prepare product data with correct format
+        product_data = {
+            "name": data.get("name"),
+            "description": data.get("description"),
+            "categoryId": str(data.get("categoryId")),  # Save categoryId as string
+            "subcategoryId": str(data.get("subcategoryId")),  # Save subcategoryId as string
+            "imageUrls": data.get("imageUrls", []),
+            "isTrending": data.get("isTrending", False),
+            "productVariantIds": variant_ids  # Save variant IDs as strings
         }
-        variant_result = mongo.db.ProductVariant.insert_one(variant_data)
-        variant_ids.append(variant_result.inserted_id)
 
-    # Update the product with variant IDs
-    mongo.db.Product.update_one(
-        {"_id": product_id},
-        {"$set": {"productVariantIds": variant_ids}}
-    )
+        # Insert product into the database
+        product_result = mongo.db.Product.insert_one(product_data)
+        product_id = product_result.inserted_id
 
-    return jsonify({
-        "message": "Product and variants created successfully.",
-        "productId": str(product_id),
-        "variantIds": [str(vid) for vid in variant_ids]
-    }), 201
+        # Response
+        return jsonify({
+            "message": "Product and variants created successfully.",
+            "productId": str(product_id),
+            "productVariantIds": variant_ids
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+@product_bp.route('/api/subcategories', methods=['GET'])
+def get_subcategories():
+    category_id = request.args.get('categoryId')
+    if not category_id:
+        print("No categoryId provided")
+        return jsonify([])
+
+    try:
+        print(f"Fetching subcategories for categoryId: {category_id}")
+        subcategories = Subcategory.get_subcategories_by_category_id(category_id)
+        print(f"Subcategories fetched: {subcategories}")
+        return jsonify([{"_id": str(sub["_id"]), "name": sub["name"]} for sub in subcategories])
+    except Exception as e:
+        print(f"Error fetching subcategories: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 

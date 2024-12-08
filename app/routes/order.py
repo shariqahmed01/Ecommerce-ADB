@@ -104,7 +104,7 @@ def submit_review(product_id):
         "productId": ObjectId(product_id),
         "rating": int(request.form.get('rating')),
         "comment": request.form.get('comment'),
-        "reviewDate": datetime.utcnow()
+        "reviewDate": datetime.now()
     }
 
     # Add review to the product
@@ -127,7 +127,7 @@ def submit_review(product_id):
         "productId": ObjectId(product_id),
         "rating": int(request.form.get('rating')),
         "comment": request.form.get('comment'),
-        "reviewDate": datetime.utcnow()
+        "reviewDate": datetime.now()
     }
 
     try:

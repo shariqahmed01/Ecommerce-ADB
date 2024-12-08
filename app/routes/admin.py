@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, flash, session, redirect, url_for, render_template
 
+from app.models import mongo
 from app.models.category import Category, Subcategory
 from app.models.customer import Customer
 from app.models.order import Order
@@ -35,29 +36,94 @@ def dashboard():
     return render_template('admin/dashboard.html')
 
 
-# View all products
 @admin_bp.route('/products', methods=['GET'])
 def manage_products():
     """Admin view for managing products."""
     products = Product.get_all_products()
-    return render_template('admin/manage_products.html', products=products)
+    categories = Category.get_all_categories()  # Fetch all categories
+    subcategories = Subcategory.get_all_subcategories()  # Fetch all subcategories
+    return render_template(
+        'admin/manage_products.html',
+        products=products,
+        categories=categories,
+        subcategories=subcategories
+    )
 
-# Add a new product
 @admin_bp.route('/products/add', methods=['POST'])
 def add_product():
-    """Admin action to add a new product."""
-    product_data = {
-        "name": request.form.get('name'),
-        "description": request.form.get('description'),
-        "price": float(request.form.get('price')),
-        "countInStock": int(request.form.get('countInStock')),
-        "imageUrls": [request.form.get('imageUrl')],
-        "isFeatured": request.form.get('isFeatured') == 'on',
-        "isTrending": request.form.get('isTrending') == 'on'
-    }
-    Product.create_product(product_data)
-    flash("Product added successfully!", "success")
-    return redirect(url_for('admin.manage_products'))
+    try:
+        # Extract and validate mandatory fields
+        name = request.form.get('name')
+        description = request.form.get('description')
+        category_id = request.form.get('categoryId')
+        subcategory_id = request.form.get('subcategoryId')
+
+        if not all([name, description, category_id, subcategory_id]):
+            flash("All mandatory fields must be filled.", "danger")
+            return redirect(url_for('admin.manage_products'))
+
+        # Validate that subcategory belongs to the selected category
+        valid_subcategories = Subcategory.get_subcategories_by_category_id(category_id)
+        if not any(sub['_id'] == subcategory_id for sub in valid_subcategories):
+            flash("Invalid subcategory for the selected category.", "danger")
+            return redirect(url_for('admin.manage_products'))
+
+        # Process image URLs
+        image_urls = request.form.get('imageUrls', '').split(',')
+        image_urls = [url.strip() for url in image_urls if url.strip()]
+
+        # Parse variants from the form
+        variants = []
+        for key, value in request.form.items():
+            if key.startswith('variants['):
+                index, field = key.split('[')[1].split(']')[0], key.split('][')[1].split(']')[0]
+                while len(variants) <= int(index):
+                    variants.append({})
+                variants[int(index)][field] = value
+
+        # Ensure no duplicate variants
+        seen_variants = set()
+        for variant in variants:
+            key = (variant.get('size'), variant.get('color'), variant.get('material'))
+            if key in seen_variants:
+                flash("Duplicate variants are not allowed.", "danger")
+                return redirect(url_for('admin.manage_products'))
+            seen_variants.add(key)
+
+        # Save product variants in ProductVariant collection
+        variant_ids = []
+        for variant in variants:
+            variant_data = {
+                "size": variant.get("size"),
+                "color": variant.get("color"),
+                "material": variant.get("material"),
+                "stockQuantity": int(variant.get("stockQuantity", 0)),
+                "price": float(variant.get("price", 0.0))
+            }
+            variant_result = mongo.db.ProductVariant.insert_one(variant_data)
+            variant_ids.append(str(variant_result.inserted_id))  # Store variant IDs as strings
+
+        # Construct and save product data in Product collection
+        product_data = {
+            "name": name,
+            "description": description,
+            "categoryId": str(category_id),  # Save categoryId as string
+            "subcategoryId": str(subcategory_id),  # Save subcategoryId as string
+            "imageUrls": image_urls,
+            "isTrending": request.form.get('isTrending') == 'on',
+            "productVariantIds": variant_ids  # Save variant IDs as strings
+        }
+        mongo.db.Product.insert_one(product_data)
+
+        flash("Product created successfully!", "success")
+        return redirect(url_for('admin.manage_products'))
+
+    except Exception as e:
+        flash(f"Error: {str(e)}", "danger")
+        return redirect(url_for('admin.manage_products'))
+
+
+
 
 # Edit an existing product
 @admin_bp.route('/products/edit/<product_id>', methods=['POST'])
